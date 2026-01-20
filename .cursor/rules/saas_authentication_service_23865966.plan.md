@@ -99,23 +99,34 @@ O serviço será desenvolvido como uma arquitetura de microsserviços modular, s
 ## Estrutura do Projeto
 
 ```
-backend/
-├── services/
-│   ├── auth-service/          # Serviço principal de autenticação
-│   ├── mfa-service/           # Serviço MFA (TOTP, SMS, Email)
-│   ├── audit-service/         # Serviço de auditoria
-│   ├── notification-service/  # Serviço de notificações
-│   └── user-service/          # Gerenciamento de usuários
-├── gateway/                    # API Gateway
-├── shared/                     # Código compartilhado
-│   ├── types/                  # TypeScript types/interfaces
-│   ├── utils/                  # Utilitários compartilhados
-│   └── middleware/             # Middlewares reutilizáveis
+shared/                     # Código compartilhado
+├── types/                  # TypeScript types/interfaces
+├── utils/                  # Utilitários compartilhados
+├── middleware/             # Middlewares reutilizáveis
+users/
+├── application/
+│   ├── dtos/
+│   ├── services/
+│   │   ├── auth-service/          # Serviço principal de autenticação
+│   │   ├── mfa-service/           # Serviço MFA (TOTP, SMS, Email)
+│   │   ├── audit-service/         # Serviço de auditoria
+│   │   ├── notification-service/  # Serviço de notificações
+│   │   └── user-service/          # Gerenciamento de usuários
+|   |   └── __tests__
+├── domain/
+│   ├── entities/
+|   |   └── __tests__
+│   ├── repositories/
 ├── infrastructure/
+│   ├── controllers/
+|   |   └── __tests__
 │   ├── docker/                 # Dockerfiles e docker-compose
 │   ├── database/               # Migrations e seeds
-│   └── redis/                  # Configuração Redis
-└── tests/                      # Testes integrados
+│   ├── redis/                  # Configuração Redis
+│   └── repositories/
+gateway/                    # API Gateway
+└── __tests__  
+
 ```
 
 ## Fase 1: MVP - Autenticação Básica (Sprint 1-2)
