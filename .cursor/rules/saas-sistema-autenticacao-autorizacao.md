@@ -72,6 +72,10 @@ Este documento descreve a arquitetura e implementação do **Sistema de Autentic
 
 - ✅ Recuperação segura de senhas  
 
+- ✅ **Suportar multi-tenancy com isolamento de dados por Domain (Organização)**  
+
+- ✅ **Implementar RBAC (Role-Based Access Control) por Domain**  
+
   
 
 ### 1.2 Produtos que Utilizarão o Sistema  
@@ -90,61 +94,93 @@ Este documento descreve a arquitetura e implementação do **Sistema de Autentic
 
   
 
-## 2. ARQUITETURA DO SISTEMA  
+## 2. ARQUITETURA DO SISTEMA
+
+### 2.1 Modelo Multi-Tenancy
+
+**Hierarquia de Isolamento:**
+
+```
+Domain/Organização
+├─ user_1
+├─ user_2
+├─ user_n
+└─ Dados isolados (sessions, audit_logs, roles)
+```
+
+O sistema implementa **Hard Isolation** para dados de domínios:
+- Cada domínio possui seus próprios usuários, sessões e logs
+- Chaves estrangeiras `domain_id` garantem isolamento de dados
+- Índices em `domain_id` otimizam consultas com escopo de domínio
+- Usuários pertencem a **exatamente um domínio** (relação 1:N domain → users)
+- Autenticação requer contexto de domínio (`domain_id` ou `domain_slug`)
+
+**Implicações de Segurança:**
+- Queries sempre filtradas por `domain_id` (defense in depth)
+- Tokens JWT contêm `domain_id` para validação de escopo
+- Rate limiting aplicado por domínio (evita abuso em múltiplos domínios)
+- Auditoria e anomalias rastreadas com escopo de domínio
+- Papéis (roles) definidos por domínio (admin, user, editor, etc)
+
+### 2.2 Diagrama de Componentes  
 
   
 
-### 2.1 Diagrama de Componentes  
-
-  
-
-O sistema é composto por **8 camadas principais**:  
+O sistema é composto por **10 camadas principais**:  
 
   
 
 | Camada | Descrição |  
 |--------|-----------|  
 | **Cliente (Frontend)** | Interfaces de usuário: telas de login, cadastro, MFA, recuperação de senha |  
-| **API Gateway** | Ponto de entrada único, middleware de autenticação, rate limiter |  
-| **Auth Service** | Gerenciamento de tokens JWT, sessões, validação de credenciais |  
+| **API Gateway** | Ponto de entrada único, middleware de autenticação, rate limiter, domain context |  
+| **Domain Manager** | Gerenciamento de domínios/organizações (CRUD, configurações, membros) |  
+| **Auth Service** | Gerenciamento de tokens JWT, sessões, validação com escopo de domínio |  
+| **RBAC Service** | Controle de papéis (roles/permissions) por domínio |  
 | **MFA Service** | TOTP, SMS, Email, códigos de backup |  
-| **SSO Providers** | Microsoft Identity Platform, Google OAuth 2.0 |  
-| **Auditoria** | Logs imutáveis, detecção de anomalias, sistema de alertas |  
-| **Armazenamento** | Banco de usuários, Redis (tokens/sessões), políticas de senha |  
+| **SSO Providers** | Microsoft Identity Platform, Google OAuth 2.0 (com domain discovery) |  
+| **Auditoria** | Logs imutáveis com escopo de domínio, detecção de anomalias, alertas |  
+| **Armazenamento** | Banco de usuários, Redis (tokens/sessões), políticas de senha, RBAC |  
 | **Notificações** | Email, SMS, Push notifications |  
 
 
-### 2.2 Fluxo de Alto Nível  
+### 2.3 Fluxo de Alto Nível  
 
-  
-
-```text
-
+```
 ┌─────────────┐  
-│   Cliente   │  
+│   Cliente   │  
 └──────┬──────┘  
-       │  
-       ▼  
-┌─────────────┐     ┌──────────────┐  
-│ API Gateway │────▶│ Auth Service │  
-└──────┬──────┘     └──────┬───────┘  
-       │                   │  
-       ▼                   ▼  
-┌─────────────┐     ┌──────────────┐  
-│ Rate Limiter│     │  MFA Service │  
-└─────────────┘     └──────┬───────┘  
-                           │  
-                           ▼  
-                    ┌──────────────┐  
-                    │  Database    │  
-                    └──────────────┘  
+       │  
+       ▼  
+┌──────────────────────────────┐  
+│ API Gateway + Domain Context │  
+│ (valida domain_id/slug)      │  
+└──────┬───────────────────────┘  
+       │  
+       ├────────────┬──────────────┬─────────────┤  
+       │            │              │             │  
+       ▼            ▼              ▼             ▼  
+┌──────────────┐ ┌────────────┐ ┌────────────┐ ┌──────────────┐  
+│ Auth Service │ │Domain      │ │RBAC Service│ │ MFA Service  │  
+│(domain_id)   │ │Manager     │ │(per domain)│ │              │  
+└──────┬───────┘ │(CRUD)      │ └────────────┘ └──────────────┘  
+       │         └────────────┘                       
+       ├─────────────────────────────────────┤  
+       │                                     │  
+       ▼                                     ▼  
+┌──────────────────┐          ┌──────────────────────┐  
+│Rate Limiter      │          │ Anomaly Detector     │  
+│(per domain)      │          │ (per domain scope)   │  
+└──────────────────┘          └──────────────────────┘  
+       │                                     │  
+       └─────────────────────────┬───────────┘  
+                                 │  
+                                 ▼  
+                    ┌────────────────────────────┐  
+                    │ Database (Hard Isolation)  │  
+                    │ domain_id in all tables    │  
+                    └────────────────────────────┘  
 ```  
-
-  
-
----  
-
-  
 
 ## 3. STACK TECNOLÓGICA RECOMENDADA  
 
@@ -195,11 +231,45 @@ O sistema é composto por **8 camadas principais**:
 
   
 
-### 4.1 Entidades Principais  
+### 4.1 Entidades Principais - Domain Multi-Tenancy
+
+#### Tabela: `domains` (NOVO)
+
+```sql  
+
+CREATE TABLE domains (  
+
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),  
+
+    name VARCHAR(255) NOT NULL,  
+
+    slug VARCHAR(255) UNIQUE NOT NULL,  
+
+    description TEXT,  
+
+    is_active BOOLEAN DEFAULT TRUE,  
+
+    created_by UUID NOT NULL,  
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  
+
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP  
+
+);  
 
   
 
-#### Tabela: `users`  
+CREATE INDEX idx_domains_slug ON domains(slug);  
+
+CREATE INDEX idx_domains_active ON domains(is_active);  
+
+```
+
+**Propósito:** Armazena informações sobre domínios/organizações. Cada domínio é um tenant isolado com seus próprios usuários.
+
+---
+
+#### Tabela: `users` (MODIFICADA)  
 
   
 
@@ -209,59 +279,122 @@ CREATE TABLE users (
 
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),  
 
-    email VARCHAR(255) UNIQUE NOT NULL,  
+    domain_id UUID NOT NULL REFERENCES domains(id) ON DELETE CASCADE,  
 
-    password_hash VARCHAR(255),  
+    email VARCHAR(255) NOT NULL,  
 
-    full_name VARCHAR(255),  
+    password_hash VARCHAR(255),  
 
-    phone VARCHAR(20),  
+    full_name VARCHAR(255),  
 
-    is_active BOOLEAN DEFAULT TRUE,  
+    phone VARCHAR(20),  
 
-    is_verified BOOLEAN DEFAULT FALSE,  
+    is_active BOOLEAN DEFAULT TRUE,  
 
-    mfa_enabled BOOLEAN DEFAULT FALSE,  
+    is_verified BOOLEAN DEFAULT FALSE,  
 
-    last_login_at TIMESTAMP,  
+    mfa_enabled BOOLEAN DEFAULT FALSE,  
 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  
+    last_login_at TIMESTAMP,  
 
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP  
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  
+
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  
+
+    UNIQUE(domain_id, email)  
 
 );  
 
   
 
-CREATE INDEX idx_users_email ON users(email);  
+CREATE INDEX idx_users_domain_id ON users(domain_id);  
+
+CREATE INDEX idx_users_email_domain ON users(domain_id, email);  
 
 CREATE INDEX idx_users_active ON users(is_active);  
 
-```  
+```
 
-  
+**Mudanças:**
+- ✅ Adicionado `domain_id` (FK) - cada usuário pertence a exatamente um domínio
+- ✅ Email único **por domínio** (constraint UNIQUE composto)
+- ✅ Índice composto `(domain_id, email)` para otimizar buscas
 
-#### Tabela: `user_mfa`  
+---
 
-  
+#### Tabela: `domain_roles` (NOVO)
+
+```sql
+
+CREATE TABLE domain_roles (
+
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    domain_id UUID NOT NULL REFERENCES domains(id) ON DELETE CASCADE,
+
+    name VARCHAR(100) NOT NULL,
+
+    description TEXT,
+
+    permissions TEXT[], -- Array de permissões (ex: ['users:read', 'users:write'])
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    UNIQUE(domain_id, name)
+
+);
+
+CREATE INDEX idx_domain_roles_domain_id ON domain_roles(domain_id);
+
+```
+
+**Propósito:** Define papéis (roles) disponíveis em cada domínio (admin, editor, viewer, etc).
+
+---
+
+#### Tabela: `user_roles` (NOVO)
+
+```sql
+
+CREATE TABLE user_roles (
+
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+
+    role_id UUID NOT NULL REFERENCES domain_roles(id) ON DELETE CASCADE,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+);
+
+CREATE INDEX idx_user_roles_user_id ON user_roles(user_id);
+
+CREATE INDEX idx_user_roles_role_id ON user_roles(role_id);
+
+```
+
+**Propósito:** Associa usuários aos papéis em um domínio (relação N:M).
+
+---
 
 ```sql  
 
 CREATE TABLE user_mfa (  
 
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),  
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),  
 
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,  
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,  
 
-    mfa_type VARCHAR(20) NOT NULL, -- 'totp', 'sms', 'email'  
+    mfa_type VARCHAR(20) NOT NULL, -- 'totp', 'sms', 'email'  
 
-    secret VARCHAR(255) NOT NULL, -- Criptografado  
+    secret VARCHAR(255) NOT NULL, -- Criptografado  
 
-    backup_codes TEXT[], -- Criptografados  
+    backup_codes TEXT[], -- Criptografados  
 
-    is_primary BOOLEAN DEFAULT FALSE,  
+    is_primary BOOLEAN DEFAULT FALSE,  
 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP  
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP  
 
 );  
 
@@ -271,33 +404,32 @@ CREATE INDEX idx_user_mfa_user_id ON user_mfa(user_id);
 
 ```  
 
-  
-
-#### Tabela: `sessions`  
-
-  
-
+#### Tabela: `sessions` (MODIFICADA)
 ```sql  
 
 CREATE TABLE sessions (  
 
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),  
 
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,  
+    domain_id UUID NOT NULL REFERENCES domains(id) ON DELETE CASCADE,  
 
-    token VARCHAR(500) UNIQUE NOT NULL,  
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,  
 
-    ip_address VARCHAR(45),  
+    token VARCHAR(500) UNIQUE NOT NULL,  
 
-    user_agent TEXT,  
+    ip_address VARCHAR(45),  
 
-    expires_at TIMESTAMP NOT NULL,  
+    user_agent TEXT,  
 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP  
+    expires_at TIMESTAMP NOT NULL,  
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP  
 
 );  
 
   
+
+CREATE INDEX idx_sessions_domain_id ON sessions(domain_id);  
 
 CREATE INDEX idx_sessions_user_id ON sessions(user_id);  
 
@@ -305,11 +437,11 @@ CREATE INDEX idx_sessions_token ON sessions(token);
 
 CREATE INDEX idx_sessions_expires_at ON sessions(expires_at);  
 
-```  
+```
 
-  
-
-#### Tabela: `password_reset_tokens`  
+**Mudanças:**
+- ✅ Adicionado `domain_id` para rastreamento de escopo
+- ✅ Índice em `domain_id` para queries eficientes
 
   
 
@@ -341,33 +473,35 @@ CREATE INDEX idx_reset_tokens_user_id ON password_reset_tokens(user_id);
 
   
 
-#### Tabela: `audit_logs`  
-
-  
+#### Tabela: `audit_logs` (MODIFICADA)
 
 ```sql  
 
 CREATE TABLE audit_logs (  
 
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),  
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),  
 
-    user_id UUID REFERENCES users(id) ON DELETE SET NULL,  
+    domain_id UUID NOT NULL REFERENCES domains(id) ON DELETE CASCADE,  
 
-    event_type VARCHAR(100) NOT NULL,  
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,  
 
-    event_data JSONB,  
+    event_type VARCHAR(100) NOT NULL,  
 
-    ip_address VARCHAR(45),  
+    event_data JSONB,  
 
-    user_agent TEXT,  
+    ip_address VARCHAR(45),  
 
-    severity VARCHAR(20) NOT NULL, -- 'info', 'warning', 'critical'  
+    user_agent TEXT,  
 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP  
+    severity VARCHAR(20) NOT NULL, -- 'info', 'warning', 'critical'  
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP  
 
 );  
 
   
+
+CREATE INDEX idx_audit_logs_domain_id ON audit_logs(domain_id);  
 
 CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);  
 
@@ -376,6 +510,12 @@ CREATE INDEX idx_audit_logs_event_type ON audit_logs(event_type);
 CREATE INDEX idx_audit_logs_severity ON audit_logs(severity);  
 
 CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at);  
+
+```
+
+**Mudanças:**
+- ✅ Adicionado `domain_id` para isolamento de logs por tenant
+- ✅ Queries de auditoria sempre filtradas por domínio
 
 ```  
 
@@ -387,9 +527,49 @@ CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at);
 
 ## 5. ENDPOINTS DA API  
 
-  
+### 5.1 Gerenciamento de Domínios (NOVO)
 
-### 5.1 Autenticação Tradicional  
+#### **POST** `/domains`  
+
+Criar novo domínio. Requer autenticação de admin.
+
+**Response (201):** Domínio criado com `id`, `name`, `slug`
+
+---
+
+#### **GET** `/domains/:id`  
+
+Obter informações de um domínio
+
+**Response (200):** Detalhes do domínio com user_count
+
+---
+
+#### **PUT** `/domains/:id`  
+
+Atualizar domínio
+
+**Response (200):** Domínio atualizado
+
+---
+
+#### **DELETE** `/domains/:id`  
+
+Deletar domínio
+
+**Response (204):** No Content
+
+---
+
+#### **GET** `/domains/:id/users`  
+
+Listar usuários do domínio
+
+**Response (200):** Lista paginada com roles
+
+---
+
+### 5.2 Autenticação Tradicional (MODIFICADA)  
 
   
 
@@ -405,10 +585,11 @@ Cadastro de novo usuário
 
 ```json  
 {  
-  "email": "usuario@example.com",  
-  "password": "Senha123!@#",  
-  "full_name": "Nome Completo",  
-  "phone": "+5511999999999"  
+  "domain_id": "domain-uuid",  
+  "email": "usuario@example.com",  
+  "password": "Senha123!@#",  
+  "full_name": "Nome Completo",  
+  "phone": "+5511999999999"  
 }  
 
 ```  
@@ -417,11 +598,6 @@ Cadastro de novo usuário
 
 **Response (201):**  
 
-```json  
-{  
-  "success": true,  
-  "message": "Usuário criado. Verifique seu email."  
-}  
 
 ```  
 
@@ -439,18 +615,7 @@ Login com credenciais
 
 ```json  
 {  
-  "email": "usuario@example.com",  
-  "password": "Senha123!@#"  
-}  
-
-```  
-
-  
-
-**Response (200) - Com MFA:**  
-
-```json  
-{  
+  "domain_id": "domain-uuid",  
   "mfa_required": true,  
   "mfa_token": "temp_token_abc123",  
   "available_methods": ["totp", "sms", "email"]  
@@ -959,66 +1124,74 @@ passwordSchema
 
   
 
-### 7.2 Rate Limiting  
+### 7.2 Rate Limiting (ATUALIZADO PARA DOMAIN-SCOPED)
 
-  
+| Endpoint | Limite | Janela | Escopo | Ação ao Exceder |  
+|----------|--------|--------|--------|-----------------|  
+| `/auth/login` | 5 tentativas | 15 minutos | **Por domínio + email** | Bloqueio temporário + CAPTCHA |  
+| `/auth/mfa/verify` | 3 tentativas | 10 minutos | **Por domínio + usuário** | Invalidar mfa_token |  
+| `/auth/password/forgot` | 3 tentativas | 1 hora | **Por domínio + email** | Bloqueio temporário |  
+| `/auth/register` | 3 tentativas | 1 hora | **Por domínio + IP** | Bloqueio por IP |  
+| `/domains/:id/users` | 100 req | 1 minuto | **Por domínio** | HTTP 429 |  
 
-| Endpoint | Limite | Janela | Ação ao Exceder |  
-|----------|--------|--------|-----------------|  
-| `/auth/login` | 5 tentativas | 15 minutos | Bloqueio temporário + CAPTCHA |  
-| `/auth/mfa/verify` | 3 tentativas | 10 minutos | Invalidar mfa_token |  
-| `/auth/password/forgot` | 3 tentativas | 1 hora | Bloqueio temporário |  
-| `/auth/register` | 3 tentativas | 1 hora | Bloqueio por IP |  
-  
-
-**Implementação com Redis:**  
-
-  
+**Implementação com Redis (Domain-Scoped):**  
 
 ```javascript  
 const rateLimit = require('express-rate-limit');  
 const RedisStore = require('rate-limit-redis');  
 
+// Rate limit por domínio + email
 const loginLimiter = rateLimit({  
-  store: new RedisStore({  
-    client: redisClient,  
-    prefix: 'rl:login:'  
-  }),  
-  windowMs: 15 * 60 * 1000, // 15 minutos  
-  max: 5,  
-  message: 'Muitas tentativas. Tente novamente em 15 minutos.'  
+  store: new RedisStore({  
+    client: redisClient,  
+    prefix: 'rl:login:'  
+  }),  
+  keyGenerator: (req, res) => {  
+    // Chave inclui domínio para isolamento
+    return `${req.body.domain_id}:${req.body.email}`;  
+  },  
+  windowMs: 15 * 60 * 1000,  
+  max: 5,  
+  message: 'Muitas tentativas neste domínio. Tente novamente em 15 minutos.'  
 });  
 
 ```  
 
   
 
-### 7.3 Tokens JWT  
-
-  
+### 7.3 Tokens JWT (ATUALIZADO PARA DOMAIN)
 
 **Configuração:**  
 - **Access Token**: expiração de 1 hora  
 - **Refresh Token**: expiração de 7 dias  
 - **Algoritmo**: RS256 (chave assimétrica)  
-- **Payload**: `user_id`, `email`, `roles`, `iat`, `exp`  
+- **Payload**: `user_id`, `email`, `domain_id`, `roles`, `iat`, `exp`  
 - **Blacklist**: tokens revogados armazenados no Redis  
 
   
 
-**Estrutura do Payload:**  
+**Estrutura do Payload (ATUALIZADA):**  
   
 
 ```json  
 {  
-  "user_id": "uuid-123",  
-  "email": "usuario@example.com",  
-  "roles": ["user"],  
-  "iat": 1704067200,  
-  "exp": 1704070800  
+  "user_id": "uuid-123",  
+  "email": "usuario@example.com",  
+  "domain_id": "domain-uuid",  
+  "domain_slug": "minha-org",  
+  "roles": ["admin", "user"],  
+  "permissions": ["users:read", "users:write"],  
+  "iat": 1704067200,  
+  "exp": 1704070800  
 }  
 
 ```  
+
+**Implicações de Segurança:**
+- ✅ `domain_id` permite validar o escopo da requisição
+- ✅ `domain_slug` facilita auditar por qual domínio foi feito o acesso
+- ✅ `roles` e `permissions` incluem RBAC do domínio
+- ✅ Middleware valida que `domain_id` no token corresponde ao `domain_id` da requisição
 
   
 
@@ -1179,63 +1352,79 @@ function encrypt(text) {
 
   
 
-## 8. AUDITORIA E MONITORAMENTO  
-
-  
+## 8. AUDITORIA E MONITORAMENTO (DOMAIN-SCOPED)
 
 ### 8.1 Eventos de Auditoria  
 
   
 
-Todos os eventos devem ser registrados na tabela `audit_logs`:  
+Todos os eventos devem ser registrados na tabela `audit_logs` **com escopo de domínio**:  
 
   
 
-| Evento | Severidade | Alerta | Notificação |  
-|--------|-----------|--------|-------------|  
-| Login bem-sucedido | info | Não | Não |  
-| Falha de login | warning | 3+ falhas | Email se > 5 falhas |  
-| Falha MFA | critical | Sim | Email + SMS |  
-| Alteração de senha | info | Não | Email |  
-| Login de novo IP | warning | Não | Email |  
-| Login de novo país | warning | Sim | Email + SMS |  
-| Desativação MFA | critical | Sim | Email + SMS |  
-| Criação de conta | info | Não | Email boas-vindas |  
-| Token JWT revogado | warning | Não | Não |  
-| Múltiplos logins simultâneos | warning | Sim | Email |  
+| Evento | Severidade | Alerta | Notificação | Domain-Scoped |  
+|--------|-----------|--------|-------------|---|  
+| Login bem-sucedido | info | Não | Não | ✅ |  
+| Falha de login | warning | 3+ falhas/domínio | Email se > 5 falhas | ✅ |  
+| Falha MFA | critical | Sim | Email + SMS | ✅ |  
+| Alteração de senha | info | Não | Email | ✅ |  
+| Login de novo IP | warning | Não | Email | ✅ |  
+| Login de novo país | warning | Sim | Email + SMS | ✅ |  
+| Desativação MFA | critical | Sim | Email + SMS | ✅ |  
+| Criação de conta | info | Não | Email boas-vindas | ✅ |  
+| Token JWT revogado | warning | Não | Não | ✅ |  
+| Múltiplos logins simultâneos | warning | Sim | Email | ✅ |  
+| **Alteração de RBAC** | **info** | **Não** | **Email admin** | **✅** |  
+| **Acesso negado (403)** | **warning** | **Sim** | **Email** | **✅** |  
+
+**Importante:** Todas as queries de auditoria devem filtrar por `domain_id` para garantir isolamento. Usuários podem ver apenas logs de seu próprio domínio.  
  
 
-### 8.2 Detecção de Anomalias  
+### 8.2 Detecção de Anomalias (DOMAIN-SCOPED)
+
+O sistema deve detectar e alertar sobre (com escopo por domínio):  
 
   
 
-O sistema deve detectar e alertar sobre:  
+✅ **Múltiplas tentativas de login falhadas** (>5 em 15 min **por domínio**)    
 
-  
+✅ **Login de país/região não usual** (usar GeoIP)    
 
-✅ **Múltiplas tentativas de login falhadas** (>5 em 15 min)    
+✅ **Múltiplos logins simultâneos de IPs diferentes** (>3 sessões **por usuário no domínio**)    
 
-✅ **Login de país/região não usual** (usar GeoIP)    
+✅ **Padrões de acesso suspeitos** (horários incomuns)    
 
-✅ **Múltiplos logins simultâneos de IPs diferentes** (>3 sessões)    
+✅ **Tentativas de acesso a recursos não autorizados** (RBAC violation **por domínio**)   
 
-✅ **Padrões de acesso suspeitos** (horários incomuns)    
+✅ **Mudança repentina de User-Agent**    
 
-✅ **Tentativas de acesso a recursos não autorizados**    
+✅ **Velocidade impossível** (login de 2 países em <1h)    
 
-✅ **Mudança repentina de User-Agent**    
+✅ **Abuso de rate limit** (excesso de requisições **por domínio**)
 
-✅ **Velocidade impossível** (login de 2 países em <1h)    
-
-  
-
-**Exemplo de Implementação:**  
+**Exemplo de Implementação (Domain-Scoped):**  
 
   
 
 ```javascript  
-async function detectAnomalies(userId, loginData) {  
-  const recentLogins = await getRecentLogins(userId, '1 hour'); 
+async function detectAnomalies(domainId, userId, loginData) {  
+  // Busca logins recentes APENAS neste domínio
+  const recentLogins = await getRecentLogins(domainId, userId, '1 hour'); 
+   
+
+  // Verificar múltiplos países neste domínio  
+  const countries = new Set(recentLogins.map(l => l.country));  
+  if (countries.size > 1) {  
+    await createAlert({  
+      domain_id: domainId,  
+      user_id: userId,  
+      type: 'IMPOSSIBLE_TRAVEL',  
+      severity: 'critical'  
+    });  
+  }  
+}  
+
+```
    
 
   // Verificar múltiplos países  
