@@ -1,0 +1,68 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: une-ai-sso-gateway
+  namespace: #{namespace}#
+spec:
+  selector:
+    istio: gateway
+  servers:
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      credentialName: unecx-tls
+    hosts:
+    - #{host}#
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    tls:
+      httpsRedirect: true
+    hosts:
+    - #{host}#
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: une-ai-sso-virtualservice
+  namespace: #{namespace}#
+spec:
+  hosts:
+  - "#{host}#"
+  gateways:
+  - une-ai-sso-gateway
+  http:
+  - route:
+    - destination:
+        host: une-ai-sso-service
+        port:
+          number: 80
+    timeout: 30s
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: une-ai-sso-destinationrule
+  namespace: #{namespace}#
+spec:
+  host: une-ai-sso-service
+  trafficPolicy:
+    loadBalancer:
+      consistentHash:
+        httpCookie:
+          name: user-session
+          ttl: 0s
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 50
+        maxRequestsPerConnection: 10
+    outlierDetection:
+      consecutiveErrors: 3
+      interval: 30s
+      baseEjectionTime: 30s

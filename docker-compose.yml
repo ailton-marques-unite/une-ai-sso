@@ -1,0 +1,15 @@
+services:
+  une-ai-sso-service:
+    build:
+      context: .  # Diretório onde está o Dockerfile
+      dockerfile: Dockerfile
+    image: une-ai-sso-service  # Defina o nome da imagem aqui
+    ports:
+      - "4000:3000"  # Mapeia a porta 3000 do contêiner para a porta 4000 do host
+    volumes:
+      - .:/srv/app  # Mapeia o diretório atual para o diretório de trabalho no contêiner
+      - /srv/app/node_modules  # Garante que node_modules seja isolado no contêiner
+
+    # env_file :
+    #   .env
+

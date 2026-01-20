@@ -1,0 +1,46 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: une-ai-sso-hpa 
+  namespace: #{namespace}#
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: une-ai-sso
+  minReplicas: #{minReplicas}#
+  maxReplicas: #{maxReplicas}#  
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu 
+      target:
+        type: Utilization
+        averageUtilization: #{scale-cpu}#
+  - type: Resource
+    resource:
+      name: memory
+      target:   
+        type: Utilization
+        averageUtilization: #{scale-memoria}#
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300  
+      policies:
+      - type: Percent
+        value: 10    
+        periodSeconds: 60
+      - type: Pods
+        value: 1    
+        periodSeconds: 60
+      selectPolicy: Min  
+    scaleUp:
+      stabilizationWindowSeconds: 60   
+      policies:
+      - type: Percent
+        value: 50    
+        periodSeconds: 60
+      - type: Pods
+        value: 2     
+        periodSeconds: 60
+      selectPolicy: Max  

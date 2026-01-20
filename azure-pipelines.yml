@@ -1,0 +1,249 @@
+trigger:
+  branches:
+    include:
+    - release/*
+    - main
+    - develop
+
+pr:
+  branches:
+    include:
+    - develop
+    - release/*
+    - main
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+- stage: 'Build'
+  displayName: 'Build and Push Container'
+  jobs: 
+  - job: 'BuildDev'
+    displayName: 'Build DEV (Manual or from Develop)'
+    condition: |
+      and(
+        ne(variables['Build.Reason'], 'PullRequest'),
+        or(
+          startsWith(variables['Build.SourceBranch'], 'refs/heads/develop'),
+          and(
+            eq(variables['Build.Reason'], 'Manual'),
+            not(startsWith(variables['Build.SourceBranch'], 'refs/heads/release/')),
+            not(eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+          )
+        )
+      ) 
+    variables:
+    - group: une-ai-sso-dev
+    pool:
+      vmImage: 'ubuntu-22.04'
+    steps:
+    - task: replacetokens@6
+      inputs:
+        sources: '$(Agent.BuildDirectory)/s/.env.build'
+        logLevel: 'debug'
+
+    - task: CmdLine@2
+      displayName: "Setup env and validate files"
+      inputs:
+        workingDirectory: '$(Agent.BuildDirectory)/s'
+        script: |
+          mv .env.build .env
+
+    - task: Docker@2
+      inputs:
+        containerRegistry: 'acrunebrs01'
+        repository: 'une-ai-sso-dev'
+        command: 'buildAndPush'
+        Dockerfile: '$(Agent.BuildDirectory)/s/Dockerfile'
+        buildContext: '$(Agent.BuildDirectory)/s'
+        tags: |
+           dev-$(Build.BuildId)
+
+  - job: 'BuildHML'
+    displayName: 'Build HML (from release)'
+    condition: and(ne(variables['Build.Reason'], 'PullRequest'), startsWith(variables['Build.SourceBranch'], 'refs/heads/release/')) 
+    variables:
+    - group: une-ai-sso-hml
+    pool:
+      vmImage: 'ubuntu-22.04'
+    steps:
+    - task: replacetokens@6
+      inputs:
+        sources: '$(Agent.BuildDirectory)/s/.env.build'
+        logLevel: 'debug'
+
+    - task: CmdLine@2
+      displayName: "Setup env and validate files"
+      inputs:
+        workingDirectory: '$(Agent.BuildDirectory)/s'
+        script: |
+          mv .env.build .env
+
+    - task: Docker@2
+      inputs:
+        containerRegistry: 'acrunebrs01'
+        repository: 'une-ai-sso-hml'
+        command: 'buildAndPush'
+        Dockerfile: '$(Agent.BuildDirectory)/s/Dockerfile'
+        buildContext: '$(Agent.BuildDirectory)/s'
+        tags: |
+           hml-$(Build.BuildId)
+
+  - job: 'BuildPRD'
+    displayName: 'Build PRD (from main)'
+    condition: and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranch'], 'refs/heads/main')) 
+    variables:
+    - group: une-ai-sso-prd
+    pool:
+      vmImage: 'ubuntu-22.04'
+    steps:
+    - task: replacetokens@6
+      inputs:
+        sources: '$(Agent.BuildDirectory)/s/.env.build'
+        logLevel: 'debug'
+
+    - task: CmdLine@2
+      displayName: "Setup env and validate files"
+      inputs:
+        workingDirectory: '$(Agent.BuildDirectory)/s'
+        script: |
+          mv .env.build .env 
+
+    - task: Docker@2
+      inputs:
+        containerRegistry: 'acrunebrs01'
+        repository: 'une-ai-sso-prd'
+        command: 'buildAndPush'
+        Dockerfile: '$(Agent.BuildDirectory)/s/Dockerfile'
+        buildContext: '$(Agent.BuildDirectory)/s'
+        tags: |
+          prd-$(Build.BuildId)
+          latest
+
+- stage: 'Deploydev'
+  displayName: 'Deployment DEV (Manual or from develop)'
+  jobs:
+  - deployment: Deploymentdev
+    displayName: "Deployment DEV"
+    condition: |
+      and(
+        succeeded(),
+        or(
+          startsWith(variables['Build.SourceBranch'], 'refs/heads/develop'),
+          and(
+            eq(variables['Build.Reason'], 'Manual'),
+            not(startsWith(variables['Build.SourceBranch'], 'refs/heads/release/')),
+            not(eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+          )
+        )
+      )
+    environment: dev
+    variables:
+      - group: une-ai-sso-infra-dev
+      - group: une-ai-sso-dev
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+          
+          - task: replacetokens@6
+            inputs:
+              sources: '$(Agent.BuildDirectory)/s/.artifacts/dev/deployment.yaml'
+              logLevel: 'debug'
+
+          - task: KubernetesManifest@1
+            displayName: 'Deploy to Kubernetes DEV'
+            inputs:
+              action: 'deploy'
+              connectionType: 'kubernetesServiceConnection'
+              kubernetesServiceConnection: 'unit-magalu-k8s-general'
+              namespace: une-dev
+              manifests: |
+                $(Agent.BuildDirectory)/s/.artifacts/dev/deployment.yaml
+
+- stage: 'Deployhml'
+  displayName: 'Deployment HML (from release)'
+  jobs:
+  - deployment: Deploymenthml
+    displayName: "Deployment HML"
+    condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/heads/release/'))
+    environment: hml
+    variables:
+      - group: une-ai-sso-infra-hml
+      - group: une-ai-sso-hml
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+
+          - task: replacetokens@6
+            inputs:
+              sources: '$(Agent.BuildDirectory)/s/.artifacts/hml/deployment.yaml'
+              logLevel: 'debug'
+
+          - task: KubernetesManifest@1
+            displayName: 'Deploy to Kubernetes HML'
+            inputs:
+              action: 'deploy'
+              connectionType: 'kubernetesServiceConnection'
+              kubernetesServiceConnection: 'aks-une-dev-eus-01'
+              namespace: une-hml
+              manifests: |
+                $(Agent.BuildDirectory)/s/.artifacts/hml/deployment.yaml
+
+- stage: 'Deployprd'
+  displayName: 'Deployment PRD'
+  jobs:
+  - deployment: Deploymentprd
+    displayName: "Deployment PRD"
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    environment: prd
+    variables:
+      - group: une-ai-sso-infra-prd
+      - group: une-ai-sso-prd
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+          
+          - task: replacetokens@6
+            inputs:
+              sources: '$(Agent.BuildDirectory)/s/.artifacts/prd/*.yaml'
+              logLevel: 'debug'
+                      
+          - task: KubernetesManifest@1
+            displayName: 'Deploy to Kubernetes PRD'
+            inputs:
+              action: 'deploy'
+              connectionType: 'kubernetesServiceConnection'
+              kubernetesServiceConnection: 'aks-une-prd-brs-01'
+              namespace: une-prd
+              manifests: |
+                $(Agent.BuildDirectory)/s/.artifacts/prd/*.yaml
+
+- stage: 'Rollback'
+  displayName: 'Rollback Deployment PRD'
+  jobs: 
+  - deployment: Rollback
+    displayName: "Rollback PRD"
+    timeoutInMinutes: 480 #8 horas
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    environment: rollback
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: Kubernetes@1
+            inputs:
+              connectionType: 'Kubernetes Service Connection'
+              kubernetesServiceEndpoint: 'aks-une-prd-brs-01'
+              namespace: 'une-prd'
+              command: 'rollout'
+              arguments: 'undo deployment une-ai-sso-backend'
+              secretType: 'dockerRegistry'
+              containerRegistryType: 'Azure Container Registry'
+

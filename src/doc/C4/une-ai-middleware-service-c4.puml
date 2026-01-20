@@ -1,0 +1,36 @@
+@startuml une-ai-middleware-service-c4
+
+title C4 Context & Container Diagram - VAPI User Service (NestJS)
+
+rectangle "User" as user {
+  component "API Gateway" as api_gateway
+  component "VAPI User Service\n(NestJS)" as vapi_service
+  component "Database" as db
+}
+user -down-> api_gateway : HTTP\nRequest
+api_gateway -down-> vapi_service : REST API Call
+vapi_service -down-> db : ORM/SQL
+
+package "Domains" {
+  component "Assistants" as assistants
+  component "Squad" as squad
+  component "Calls" as calls
+  component "Chats" as chats
+  component "Campaigns" as campaigns
+  component "Sessions" as sessions
+  component "Phone Numbers" as phone_numbers
+  component "Tools" as tools
+  component "Structured Outputs" as structured_outputs
+}
+
+vapi_service -down-> assistants
+vapi_service -down-> squad
+vapi_service -down-> calls
+vapi_service -down-> chats
+vapi_service -down-> campaigns
+vapi_service -down-> sessions
+vapi_service -down-> phone_numbers
+vapi_service -down-> tools
+vapi_service -down-> structured_outputs
+
+@enduml
