@@ -1,15 +1,52 @@
 services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: une-ai-sso-postgres
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-une_ai_sso}
+      POSTGRES_USER: ${DATABASE_USER:-postgres}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-postgres}
+    ports:
+      - "${DATABASE_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - une-ai-sso-network
+
   une-ai-sso-service:
     build:
       context: .  # Diretório onde está o Dockerfile
       dockerfile: Dockerfile
     image: une-ai-sso-service  # Defina o nome da imagem aqui
+    container_name: une-ai-sso-service
     ports:
       - "4000:3000"  # Mapeia a porta 3000 do contêiner para a porta 4000 do host
     volumes:
       - .:/srv/app  # Mapeia o diretório atual para o diretório de trabalho no contêiner
       - /srv/app/node_modules  # Garante que node_modules seja isolado no contêiner
+    environment:
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: ${DATABASE_USER:-postgres}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-postgres}
+      DATABASE_NAME: ${DATABASE_NAME:-une_ai_sso}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - une-ai-sso-network
 
     # env_file :
     #   .env
 
+volumes:
+  postgres_data:
+
+networks:
+  une-ai-sso-network:
+    driver: bridge

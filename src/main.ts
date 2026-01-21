@@ -18,7 +18,9 @@ async function bootstrap() {
   // Swagger configuration
   const config = new DocumentBuilder()
     .setTitle('UNE AI SSO Backend')
-    .setDescription('API for managing Single Sign-On users and related services')
+    .setDescription(
+      'API for managing Single Sign-On users and related services',
+    )
     .setVersion('1.0')
     .addBearerAuth()
     .build();
