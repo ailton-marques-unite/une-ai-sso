@@ -18,6 +18,22 @@ services:
     networks:
       - une-ai-sso-network
 
+  redis:
+    image: redis:latest
+    container_name: une-ai-sso-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: redis-server --requirepass ${REDIS_PASSWORD:-}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - une-ai-sso-network
+
   une-ai-sso-service:
     build:
       context: .  # Diretório onde está o Dockerfile
@@ -35,8 +51,14 @@ services:
       DATABASE_USER: ${DATABASE_USER:-postgres}
       DATABASE_PASSWORD: ${DATABASE_PASSWORD:-postgres}
       DATABASE_NAME: ${DATABASE_NAME:-une_ai_sso}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_URL: redis://redis:6379
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - une-ai-sso-network
@@ -46,6 +68,7 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
   une-ai-sso-network:

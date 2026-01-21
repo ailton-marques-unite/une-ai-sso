@@ -11,7 +11,10 @@ const AppDataSource = new DataSource({
   username: process.env.DATABASE_USER || 'postgres_uneaisso',
   password: process.env.DATABASE_PASSWORD || 'postgres_UneA1Ss0',
   database: process.env.DATABASE_NAME || 'une_ai_sso',
-  entities: [path.join(__dirname, '../**/*.entity{.ts,.js}')],
+  // Importar entidades explicitamente para evitar problemas de carregamento
+  entities: [
+    path.join(__dirname, '../domains/domain/entities/*.entity{.ts,.js}'),
+  ],
   migrations: [path.join(__dirname, 'migrations/*{.ts,.js}')],
   synchronize: false,
   logging: process.env.NODE_ENV === 'development',
