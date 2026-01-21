@@ -39,11 +39,11 @@ export class DomainContextMiddleware implements NestMiddleware {
 
     if (domainId) {
       domain = await this.domainRepository.findOne({
-        where: { id: domainId, is_active: true },
+        where: { id: domainId },
       });
     } else if (domainSlug) {
       domain = await this.domainRepository.findOne({
-        where: { slug: domainSlug, is_active: true },
+        where: { slug: domainSlug },
       });
     }
 

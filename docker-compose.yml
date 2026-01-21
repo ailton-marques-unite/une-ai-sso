@@ -34,34 +34,34 @@ services:
     networks:
       - une-ai-sso-network
 
-  une-ai-sso-service:
-    build:
-      context: .  # Diretório onde está o Dockerfile
-      dockerfile: Dockerfile
-    image: une-ai-sso-service  # Defina o nome da imagem aqui
-    container_name: une-ai-sso-service
-    ports:
-      - "4000:3000"  # Mapeia a porta 3000 do contêiner para a porta 4000 do host
-    volumes:
-      - .:/srv/app  # Mapeia o diretório atual para o diretório de trabalho no contêiner
-      - /srv/app/node_modules  # Garante que node_modules seja isolado no contêiner
-    environment:
-      DATABASE_HOST: postgres
-      DATABASE_PORT: 5432
-      DATABASE_USER: ${DATABASE_USER:-postgres}
-      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-postgres}
-      DATABASE_NAME: ${DATABASE_NAME:-une_ai_sso}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
-      REDIS_URL: redis://redis:6379
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - une-ai-sso-network
+  # une-ai-sso-service:
+  #   build:
+  #     context: .  # Diretório onde está o Dockerfile
+  #     dockerfile: Dockerfile
+  #   image: une-ai-sso-service  # Defina o nome da imagem aqui
+  #   container_name: une-ai-sso-service
+  #   ports:
+  #     - "4000:3000"  # Mapeia a porta 3000 do contêiner para a porta 4000 do host
+  #   volumes:
+  #     - .:/srv/app  # Mapeia o diretório atual para o diretório de trabalho no contêiner
+  #     - /srv/app/node_modules  # Garante que node_modules seja isolado no contêiner
+  #   environment:
+  #     DATABASE_HOST: postgres
+  #     DATABASE_PORT: 5432
+  #     DATABASE_USER: ${DATABASE_USER:-postgres}
+  #     DATABASE_PASSWORD: ${DATABASE_PASSWORD:-postgres}
+  #     DATABASE_NAME: ${DATABASE_NAME:-une_ai_sso}
+  #     REDIS_HOST: redis
+  #     REDIS_PORT: 6379
+  #     REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+  #     REDIS_URL: redis://redis:6379
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   networks:
+  #     - une-ai-sso-network
 
     # env_file :
     #   .env
