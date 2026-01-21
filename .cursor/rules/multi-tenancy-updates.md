@@ -389,3 +389,12 @@ Team sync
 **Versão**: 1.0  
 **Data**: Janeiro de 2026  
 **Status**: ✅ Documentação Completa - Pronto para Implementação
+PORT=3000
+NODE_ENV=development
+VAPI_SECRET_KEY=
+VAPI_API_URL=
+
+# WhatsApp Configuration
+EVOLUTION_API_KEY=
+EVOLUTION_URL=
+WEBHOOK_URL=
