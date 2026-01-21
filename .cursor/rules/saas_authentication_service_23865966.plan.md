@@ -196,10 +196,10 @@ Implementar a base de multi-tenancy com Domains como contexto de isolamento de t
 
 ### Entregas Fase 0
 
-- [ ] Schema de banco com domain_id em todas as tabelas críticas
-- [ ] Domain Context Middleware implementado
-- [ ] Domain Manager Service com endpoints CRUD
-- [ ] Índices otimizados
+- [x] Schema de banco com domain_id em todas as tabelas críticas
+- [x] Domain Context Middleware implementado
+- [x] Domain Manager Service com endpoints CRUD
+- [x] Índices otimizados
 - [ ] Repositories com domain-scoping automático
 
 ---
