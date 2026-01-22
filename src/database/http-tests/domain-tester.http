@@ -1,8 +1,12 @@
-GET http://localhost:3000/domains/9df900bc-e6b8-450e-bf29-477d7a877e98 HTTP/1.1
+GET http://localhost:3000/domains?page=1&limit=10 HTTP/1.1
 Accept: application/json
 x-domain-slug: unite-group
 ###
 
+GET http://localhost:3000/domains/9df900bc-e6b8-450e-bf29-477d7a877e98 HTTP/1.1
+Accept: application/json
+x-domain-slug: unite-group
+###
 
 GET http://localhost:3000/domains?page=1&limit=10&is_active=false&id=9df900bc-e6b8-450e-bf29-477d7a877e98 HTTP/1.1
 Accept: application/json
