@@ -24,7 +24,7 @@ export class User {
   domain_id: string;
 
   @ManyToOne(() => Domain, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'domain_id' })
+  @JoinColumn({ name: 'id' })
   domain: Domain;
 
   @Column({ type: 'varchar', length: 255 })

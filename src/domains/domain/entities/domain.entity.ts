@@ -28,6 +28,9 @@ export class Domain {
   @Column({ type: 'uuid' })
   created_by: string;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  ms_tenant_id?: string;
+
   @CreateDateColumn()
   created_at: Date;
 

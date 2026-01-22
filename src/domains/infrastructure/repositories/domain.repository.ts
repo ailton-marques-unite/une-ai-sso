@@ -33,6 +33,12 @@ export class DomainRepository implements IDomainRepository {
     });
   }
 
+  async findByMsTenantId(msTenantId: string): Promise<Domain | null> {
+    return this.domainRepository.findOne({
+      where: { ms_tenant_id: msTenantId, is_active: true },
+    });
+  }
+
   async create(domain: Partial<Domain>): Promise<Domain> {
     const newDomain = this.domainRepository.create(domain);
     return this.domainRepository.save(newDomain);
