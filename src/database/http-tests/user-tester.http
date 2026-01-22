@@ -1,0 +1,43 @@
+# Obter informações do usuário autenticado
+GET http://localhost:3000/users/me HTTP/1.1
+Accept: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.e30.X2eudaEw4Z1j1h2eaGFWktxd3YuaoW-bnngWmMAnvKU
+x-domain-slug: unite-group
+
+###
+POST http://localhost:3000/auth/register HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+x-domain-slug: unite-group
+
+{
+  "email": "ailton.marques@une.cx",
+  "password": "SenhaSegura123!@#",
+  "full_name": "Ailton Marques"
+}
+
+###
+# Login com domain_id no body - domiain_id inválido
+POST http://localhost:3000/auth/login HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+x-domain-slug: unite-group
+
+{
+  "domain_id": "9df900bc-e6b8-450e-bf29-477d7a877e98",
+  "email": "usuario@example.com",
+  "password": "SenhaSegura123!@#"
+}
+
+### 
+# Login com domain_id no header - domiain_id
+POST http://localhost:3000/auth/login HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+x-domain-slug: unite-group
+x-domain-id: a0b8ad0d-6bc6-42a7-b571-f0265ef9e3bd
+
+{
+  "email": "ailton.marques@une.cx",
+  "password": "NULL"
+}

@@ -2,8 +2,6 @@ import { Module, MiddlewareConsumer, NestModule, RequestMethod } from '@nestjs/c
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { typeOrmConfig } from '../typeorm.config';
 import { RedisModule } from './shared/infrastructure/redis/redis.module';
 import { DomainContextMiddleware } from './shared/middleware/domain-context.middleware';
@@ -13,6 +11,7 @@ import { DomainsModule } from './domains/domains.module';
 import { AppThrottlerModule } from './shared/infrastructure/throttler/throttler.module';
 import { ThrottlerDomainGuard } from './shared/infrastructure/throttler/throttler-domain.guard';
 import { HealthController } from './shared/infrastructure/controllers/health.controller';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -21,12 +20,12 @@ import { HealthController } from './shared/infrastructure/controllers/health.con
     TypeOrmModule.forFeature([Domain, DomainRole]),
     RedisModule,
     DomainsModule,
+    UsersModule,
     AppThrottlerModule,
     // Other modules can be imported here
   ],
-  controllers: [AppController, HealthController],
+  controllers: [HealthController],
   providers: [
-    AppService,
     {
       provide: APP_GUARD,
       useClass: ThrottlerDomainGuard,
