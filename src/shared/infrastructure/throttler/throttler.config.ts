@@ -12,7 +12,7 @@ export const throttlerConfig = (configService: ConfigService): ThrottlerModuleOp
         // Em produção: limite mais restritivo
         ttl: parseInt(configService.get<string>('RATE_LIMIT_WINDOW_MS', '900000'), 10),
         limit: isDevelopment 
-          ? parseInt(configService.get<string>('RATE_LIMIT_MAX_REQUESTS_DEV', '1000'), 10)
+          ? parseInt(configService.get<string>('RATE_LIMIT_MAX_REQUESTS_DEV', '900000'), 10)
           : parseInt(configService.get<string>('RATE_LIMIT_MAX_REQUESTS', '5'), 10),
       },
       {
