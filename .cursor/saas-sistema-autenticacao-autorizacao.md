@@ -1519,15 +1519,15 @@ JWT_REFRESH_TOKEN_EXPIRES_IN=7d
 # ============================================  
 MICROSOFT_CLIENT_ID=your-azure-app-id  
 MICROSOFT_CLIENT_SECRET=your-azure-secret  
-MICROSOFT_TENANT_ID=your-tenant-id  
-MICROSOFT_REDIRECT_URI=https://api.une.cx/auth/sso/callback  
+MICROSOFT_TENANT_ID=your-tenant-id (opcional, pode ser 'common' ou 'organizations')  
+MICROSOFT_REDIRECT_URI=https://api.une.cx/auth/sso/microsoft/callback  
 
 # ============================================  
 # GOOGLE SSO  
 # ============================================  
 GOOGLE_CLIENT_ID=your-google-client-id  
 GOOGLE_CLIENT_SECRET=your-google-secret  
-GOOGLE_REDIRECT_URI=https://api.une.cx/auth/sso/callback   
+GOOGLE_REDIRECT_URI=https://api.une.cx/auth/sso/google/callback   
 
 # ============================================  
 # EMAIL (SENDGRID)  
