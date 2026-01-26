@@ -38,7 +38,7 @@ export class UserService {
     );
     if (emailExists) {
       throw new ConflictException(
-        'Email já está em uso neste domínio',
+        'This email address is already in use on this domain.',
       );
     }
 
@@ -47,10 +47,11 @@ export class UserService {
       createUserDto.password,
     );
 
-    // Criar usuário
+    // Criar usuário - remover 'password' do DTO e mapear para 'password_hash'
+    const { password, ...userDataWithoutPassword } = createUserDto;
     const user = await this.userRepository.create(domainId, {
-      ...createUserDto,
-      password: passwordHash,
+      ...userDataWithoutPassword,
+      password_hash: passwordHash,
     });
 
     // Retornar DTO sem senha
@@ -60,7 +61,7 @@ export class UserService {
   async findById(domainId: string, id: string): Promise<UserResponseDto> {
     const user = await this.userRepository.findById(domainId, id);
     if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
+      throw new NotFoundException('User not found');
     }
     return this.toResponseDto(user);
   }

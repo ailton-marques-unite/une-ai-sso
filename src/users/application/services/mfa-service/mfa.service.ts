@@ -43,7 +43,7 @@ export class MfaService {
   ) {
     const key = this.configService.get<string>('MFA_ENCRYPTION_KEY');
     if (!key || key.length !== 64) {
-      throw new Error('MFA_ENCRYPTION_KEY deve ser uma chave hexadecimal de 64 caracteres (32 bytes)');
+      throw new Error('MFA_ENCRYPTION_KEY must be a 64-character (32-byte) hexadecimal key');
     }
     this.encryptionKey = Buffer.from(key, 'hex');
     this.issuer = this.configService.get<string>('MFA_ISSUER', 'Une.cx');
@@ -60,14 +60,14 @@ export class MfaService {
     });
 
     if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
+      throw new NotFoundException('User not found');
     }
 
     if (mfaType === MfaType.TOTP) {
       return this.setupTotp(domainId, userId, user.email);
     }
 
-    throw new BadRequestException(`Tipo MFA não suportado: ${mfaType}`);
+    throw new BadRequestException(`MFA type not supported: ${mfaType}`);
   }
 
   private async setupTotp(
@@ -121,7 +121,7 @@ export class MfaService {
     });
 
     if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
+      throw new NotFoundException('User not found');
     }
 
     // Verificar SMS MFA
@@ -140,7 +140,7 @@ export class MfaService {
     });
 
     if (!userMfa) {
-      throw new NotFoundException('MFA não configurado para este usuário');
+      throw new NotFoundException('MFA not configured for this user');
     }
 
     // Descriptografar secret
@@ -190,12 +190,12 @@ export class MfaService {
     });
 
     if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
+      throw new NotFoundException('User not found');
     }
 
     if (mfaType === MfaType.SMS) {
       if (!user.phone) {
-        throw new BadRequestException('Telefone não cadastrado');
+        throw new BadRequestException('Phone not registered');
       }
       return this.smsService.sendMfaCode(domainId, userId, user.phone);
     }
@@ -212,7 +212,7 @@ export class MfaService {
       );
     }
 
-    throw new BadRequestException(`Tipo MFA não suporta envio de código: ${mfaType}`);
+    throw new BadRequestException(`MFA type does not support sending code: ${mfaType}`);
   }
 
   async enableMfa(
@@ -226,7 +226,7 @@ export class MfaService {
     });
 
     if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
+      throw new NotFoundException('User not found');
     }
 
     const userMfa = await this.userMfaRepository.findOne({
@@ -235,13 +235,13 @@ export class MfaService {
     });
 
     if (!userMfa) {
-      throw new NotFoundException('MFA não configurado. Execute setup primeiro.');
+      throw new NotFoundException('MFA not configured. Execute setup first.');
     }
 
     // Verificar código
     const isValid = await this.verifyMfa(domainId, userId, verificationCode, mfaType);
     if (!isValid) {
-      throw new BadRequestException('Código de verificação inválido');
+      throw new BadRequestException('Verification code invalid');
     }
 
     // Marcar como primary e desabilitar outros métodos MFA primários
@@ -263,7 +263,7 @@ export class MfaService {
     });
 
     if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
+      throw new NotFoundException('User not found');
     }
 
     // Remover todos os métodos MFA
@@ -282,7 +282,7 @@ export class MfaService {
     });
 
     if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
+      throw new NotFoundException('User not found');
     }
 
     const userMfa = await this.userMfaRepository.findOne({
@@ -290,7 +290,7 @@ export class MfaService {
     });
 
     if (!userMfa) {
-      throw new NotFoundException('MFA não está habilitado');
+      throw new NotFoundException('MFA is not enabled');
     }
 
     const backupCodes = this.generateBackupCodesArray(10);

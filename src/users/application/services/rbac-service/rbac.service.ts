@@ -35,7 +35,7 @@ export class RbacService {
     });
 
     if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
+      throw new NotFoundException('User not found');
     }
 
     const roles: string[] = [];
@@ -71,7 +71,7 @@ export class RbacService {
     });
 
     if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
+      throw new NotFoundException('User not found');
     }
 
     // Verificar se role existe e pertence ao domínio
@@ -80,7 +80,7 @@ export class RbacService {
     });
 
     if (!role) {
-      throw new NotFoundException('Role não encontrada');
+      throw new NotFoundException('Role not found');
     }
 
     // Verificar se já existe a associação
@@ -112,7 +112,7 @@ export class RbacService {
     });
 
     if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
+      throw new NotFoundException('User not found');
     }
 
     const role = await this.domainRoleRepository.findOne({
@@ -120,7 +120,7 @@ export class RbacService {
     });
 
     if (!role) {
-      throw new NotFoundException('Role não encontrada');
+      throw new NotFoundException('Role not found');
     }
 
     await this.userRoleRepository.delete({
@@ -163,7 +163,7 @@ export class RbacService {
 
     if (!hasPermission) {
       throw new ForbiddenException(
-        `Permissão necessária: ${permission}`,
+        `Permission required: ${permission}`,
       );
     }
   }
@@ -176,7 +176,7 @@ export class RbacService {
     const hasRole = await this.hasRole(domainId, userId, role);
 
     if (!hasRole) {
-      throw new ForbiddenException(`Role necessária: ${role}`);
+      throw new ForbiddenException(`Role required: ${role}`);
     }
   }
 }

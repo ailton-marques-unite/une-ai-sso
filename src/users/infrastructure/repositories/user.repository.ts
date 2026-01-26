@@ -26,7 +26,7 @@ export class UserRepository implements IUserRepository {
     });
   }
 
-  async create(domainId: string, userData: CreateUserDto): Promise<User> {
+  async create(domainId: string, userData: Omit<CreateUserDto, 'password'> & { password_hash?: string }): Promise<User> {
     const user = this.userRepository.create({
       ...userData,
       domain_id: domainId,

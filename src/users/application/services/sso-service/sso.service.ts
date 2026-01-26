@@ -69,7 +69,7 @@ export class SsoService {
     state: string;
   }> {
     if (!this.googleClientId || !this.googleClientSecret) {
-      throw new BadRequestException('Google OAuth não configurado');
+      throw new BadRequestException('Google OAuth not configured');
     }
 
     // Gerar state aleatório
@@ -109,7 +109,7 @@ export class SsoService {
     const storedDomainId = await this.redisClient.get(stateKey);
     
     if (storedDomainId === null || storedDomainId === undefined) {
-      throw new BadRequestException('State inválido ou expirado');
+      throw new BadRequestException('State invalid or expired');
     }
 
     // Remover state usado
@@ -185,8 +185,8 @@ export class SsoService {
         domainId = domain.id;
       } else {
         throw new NotFoundException(
-          `Domínio não encontrado para o email ${googleUser.email}. ` +
-          `Verifique se o domínio está cadastrado e ativo, ou forneça o domain_id no parâmetro da requisição.`,
+          `Domain not found for email ${googleUser.email}. ` +
+          `Check if the domain is registered and active, or provide the domain_id in the request parameter.`,
         );
       }
     }
@@ -247,7 +247,7 @@ export class SsoService {
     state: string;
   }> {
     if (!this.microsoftClientId || !this.microsoftClientSecret) {
-      throw new BadRequestException('Microsoft OAuth não configurado');
+      throw new BadRequestException('Microsoft OAuth not configured');
     }
 
     // Gerar state aleatório
@@ -288,7 +288,7 @@ export class SsoService {
     const storedDomainId = await this.redisClient.get(stateKey);
     
     if (storedDomainId === null || storedDomainId === undefined) {
-      throw new BadRequestException('State inválido ou expirado');
+      throw new BadRequestException('State invalid or expired');
     }
 
     // Remover state usado
@@ -353,7 +353,7 @@ export class SsoService {
 
     if (!domain) {
       throw new NotFoundException(
-        `Domínio não encontrado para o tenant Microsoft ${microsoftUser.tenantId || 'desconhecido'}. Entre em contato com o administrador.`,
+        `Domain not found for Microsoft tenant ${microsoftUser.tenantId || 'unknown'}. Contact the administrator.`,
       );
     }
 

@@ -22,18 +22,18 @@ export class UserController {
   ) {}
 
   @Get('me')
-  @ApiOperation({ summary: 'Obter informações do usuário autenticado com roles' })
+  @ApiOperation({ summary: 'Retrieve information from authenticated users with roles' })
   @ApiResponse({
     status: 200,
-    description: 'Informações do usuário com roles e permissões',
+    description: 'User information with roles and permissions',
   })
-  @ApiResponse({ status: 401, description: 'Não autorizado' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getMe(@Request() req: any): Promise<UserResponseDto & { roles: string[]; permissions: string[] }> {
     const domainId = req.domainContext?.domainId;
     const userId = req.user?.sub;
 
     if (!domainId || !userId) {
-      throw new Error('Domain context e usuário são obrigatórios');
+      throw new Error('Domain context and user are required');
     }
 
     const user = await this.userService.findById(domainId, userId);
@@ -50,20 +50,20 @@ export class UserController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Obter dados do usuário por ID (domain-scoped)' })
+  @ApiOperation({ summary: 'Retrieve user data by ID (domain-scoped)' })
   @ApiResponse({
     status: 200,
-    description: 'Dados do usuário',
+    description: 'User data',
     type: UserResponseDto,
   })
-  @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   async findById(
     @Param('id') id: string,
     @Request() req: any,
   ): Promise<UserResponseDto> {
     const domainId = req.domainContext?.domainId;
     if (!domainId) {
-      throw new Error('Domain context é obrigatório');
+      throw new Error('Domain context is required');
     }
     return this.userService.findById(domainId, id);
   }
