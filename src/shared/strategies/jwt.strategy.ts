@@ -21,12 +21,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const domainContext = (req as any).domainContext;
     
     if (!domainContext) {
-      throw new UnauthorizedException('Domain context não encontrado');
+      throw new UnauthorizedException('Domain context not found');
     }
 
     if (payload.domain_id !== domainContext.domainId) {
       throw new UnauthorizedException(
-        'Token não pertence a este domínio',
+        'Token does not belong to this domain',
       );
     }
 

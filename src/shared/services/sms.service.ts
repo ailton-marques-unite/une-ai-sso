@@ -34,7 +34,7 @@ export class SmsService {
     phoneNumber: string,
   ): Promise<{ code: string; expiresIn: number }> {
     if (!this.twilioClient) {
-      throw new BadRequestException('SMS service não configurado');
+      throw new BadRequestException('SMS service not configured');
     }
 
     // Gerar código de 6 dígitos

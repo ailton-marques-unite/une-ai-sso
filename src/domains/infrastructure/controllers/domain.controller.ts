@@ -34,13 +34,13 @@ export class DomainController {
   constructor(private readonly domainService: DomainService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Criar novo domínio' })
+  @ApiOperation({ summary: 'Create a new domain' })
   @ApiResponse({
     status: 201,
-    description: 'Domínio criado com sucesso',
+    description: 'Domain created successfully',
     type: DomainResponseDto,
   })
-  @ApiResponse({ status: 409, description: 'Slug já existe' })
+  @ApiResponse({ status: 409, description: 'Slug already exists' })
   @ApiBearerAuth()
   async create(@Body() createDomainDto: CreateDomainDto): Promise<DomainResponseDto> {
     // TODO: Obter created_by do token JWT quando autenticação estiver implementada
@@ -74,7 +74,7 @@ export class DomainController {
     description: 'Domínio encontrado',
     type: DomainResponseDto,
   })
-  @ApiResponse({ status: 404, description: 'Domínio não encontrado' })
+  @ApiResponse({ status: 404, description: 'Domain not found' })
   async findOne(@Param('id') id: string): Promise<DomainResponseDto> {
     const domain = await this.domainService.findOne(id);
     if (!domain) {
@@ -88,7 +88,7 @@ export class DomainController {
   @ApiParam({ name: 'slug', description: 'Slug do domínio' })
   @ApiResponse({
     status: 200,
-    description: 'Domínio encontrado',
+    description: 'Domain found',
     type: DomainResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Domínio não encontrado' })
@@ -105,7 +105,7 @@ export class DomainController {
   @ApiParam({ name: 'id', description: 'ID do domínio' })
   @ApiResponse({
     status: 200,
-    description: 'Domínio atualizado com sucesso',
+    description: 'Domain updated successfully',
     type: DomainResponseDto,
   })
   @ApiResponse({ status: 404, description: 'Domínio não encontrado' })

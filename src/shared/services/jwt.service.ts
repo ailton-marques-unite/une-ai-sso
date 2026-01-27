@@ -61,7 +61,7 @@ export class AppJwtService {
     try {
       return await this.jwtService.verifyAsync<JwtPayload>(token);
     } catch (error) {
-      throw new UnauthorizedException('Token inválido ou expirado');
+      throw new UnauthorizedException('Token invalid or expired');
     }
   }
 
