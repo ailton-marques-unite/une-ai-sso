@@ -24,15 +24,15 @@ export class SsoController {
   @Get('google')
   @Public()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Iniciar fluxo OAuth2 com Google' })
+  @ApiOperation({ summary: 'Start OAuth2 flow with Google' })
   @ApiQuery({
     name: 'domain_id',
     required: false,
-    description: 'ID do domínio (opcional, será descoberto via email se não fornecido)',
+    description: 'Domain ID (optional, will be discovered via email if not provided)',
   })
   @ApiResponse({
     status: 200,
-    description: 'URL de autorização Google',
+    description: 'Google authorization URL',
   })
   async initiateGoogleOAuth(
     @Query('domain_id') domainId?: string,
@@ -43,14 +43,14 @@ export class SsoController {
   @Get('google/callback')
   @Public()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Callback após autenticação Google' })
-  @ApiQuery({ name: 'code', description: 'Authorization code do Google' })
-  @ApiQuery({ name: 'state', description: 'State token para validação' })
+  @ApiOperation({ summary: 'Callback after Google authentication' })
+  @ApiQuery({ name: 'code', description: 'Google authorization code' })
+  @ApiQuery({ name: 'state', description: 'State token for validation' })
   @ApiResponse({
     status: 200,
-    description: 'Tokens JWT gerados',
+    description: 'Generated JWT tokens',
   })
-  @ApiResponse({ status: 400, description: 'Código ou state inválido' })
+  @ApiResponse({ status: 400, description: 'Invalid code or state' })
   async handleGoogleCallback(
     @Query('code') code: string,
     @Query('state') state: string,
@@ -63,22 +63,22 @@ export class SsoController {
     res.json({
       success: true,
       ...tokens,
-      message: 'Autenticação Google realizada com sucesso',
+      message: 'Google authentication successful',
     });
   }
 
   @Get('microsoft')
   @Public()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Iniciar fluxo OAuth2 com Microsoft' })
+  @ApiOperation({ summary: 'Start OAuth2 flow with Microsoft' })
   @ApiQuery({
     name: 'domain_id',
     required: false,
-    description: 'ID do domínio (opcional, será descoberto via Tenant ID se não fornecido)',
+    description: 'Domain ID (optional, will be discovered via Tenant ID if not provided)',
   })
   @ApiResponse({
     status: 200,
-    description: 'URL de autorização Microsoft',
+    description: 'Microsoft authorization URL',
   })
   async initiateMicrosoftOAuth(
     @Query('domain_id') domainId?: string,
@@ -89,14 +89,14 @@ export class SsoController {
   @Get('microsoft/callback')
   @Public()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Callback após autenticação Microsoft' })
-  @ApiQuery({ name: 'code', description: 'Authorization code do Microsoft' })
-  @ApiQuery({ name: 'state', description: 'State token para validação' })
+  @ApiOperation({ summary: 'Callback after Microsoft authentication' })
+  @ApiQuery({ name: 'code', description: 'Microsoft authorization code' })
+  @ApiQuery({ name: 'state', description: 'State token for validation' })
   @ApiResponse({
     status: 200,
-    description: 'Tokens JWT gerados',
+    description: 'Generated JWT tokens',
   })
-  @ApiResponse({ status: 400, description: 'Código ou state inválido' })
+  @ApiResponse({ status: 400, description: 'Invalid code or state' })
   async handleMicrosoftCallback(
     @Query('code') code: string,
     @Query('state') state: string,
@@ -109,7 +109,7 @@ export class SsoController {
     res.json({
       success: true,
       ...tokens,
-      message: 'Autenticação Microsoft realizada com sucesso',
+      message: 'Microsoft authentication successful',
     });
   }
 }

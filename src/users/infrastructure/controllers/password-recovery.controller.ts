@@ -22,11 +22,11 @@ export class PasswordRecoveryController {
   @Public()
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 3, ttl: 3600000 } }) // 3 tentativas por hora
-  @ApiOperation({ summary: 'Solicitar reset de senha' })
+  @ApiOperation({ summary: 'Request password reset' })
   @ApiBody({ type: ForgotPasswordDto })
   @ApiResponse({
     status: 200,
-    description: 'Email de recuperação enviado (se o email existir)',
+    description: 'Password reset email sent (if email exists)',
   })
   async forgotPassword(
     @Body() forgotPasswordDto: ForgotPasswordDto,
@@ -34,7 +34,7 @@ export class PasswordRecoveryController {
   ): Promise<{ success: boolean; message: string }> {
     const domainId = req.domainContext?.domainId;
     if (!domainId) {
-      throw new Error('Domain context é obrigatório');
+      throw new Error('Domain context is required');
     }
     return this.passwordRecoveryService.requestPasswordReset(
       domainId,
@@ -46,20 +46,20 @@ export class PasswordRecoveryController {
   @Public()
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 tentativas por minuto
-  @ApiOperation({ summary: 'Redefinir senha com token' })
+  @ApiOperation({ summary: 'Reset password with token' })
   @ApiBody({ type: ResetPasswordDto })
   @ApiResponse({
     status: 200,
-    description: 'Senha redefinida com sucesso',
+    description: 'Password reset successfully',
   })
-  @ApiResponse({ status: 400, description: 'Token inválido ou expirado' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired token' })
   async resetPassword(
     @Body() resetPasswordDto: ResetPasswordDto,
     @Request() req: any,
   ): Promise<{ success: boolean; message: string }> {
     const domainId = req.domainContext?.domainId;
     if (!domainId) {
-      throw new Error('Domain context é obrigatório');
+      throw new Error('Domain context is required');
     }
     return this.passwordRecoveryService.resetPassword(domainId, resetPasswordDto);
   }

@@ -40,7 +40,7 @@ export class AuthService {
     });
 
     if (!domain) {
-      throw new NotFoundException('Domínio não encontrado ou inativo');
+      throw new NotFoundException('Domain not found or inactive');
     }
 
     return this.userService.create(domainId, createUserDto);
@@ -55,23 +55,23 @@ export class AuthService {
     });
 
     if (!domain) {
-      throw new NotFoundException('Domínio não encontrado ou inativo');
+      throw new NotFoundException('Domain not found or inactive');
     }
 
     // Buscar usuário
     const user = await this.userService.findByEmail(domain_id, email);
     if (!user) {
-      throw new UnauthorizedException('Credenciais inválidas');
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     // Verificar se usuário está ativo
     if (!user.is_active) {
-      throw new UnauthorizedException('Usuário inativo');
+      throw new UnauthorizedException('User inactive');
     }
 
     // Verificar senha
     if (!user.password_hash) {
-      throw new UnauthorizedException('Credenciais inválidas');
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     const isPasswordValid = await this.passwordService.comparePassword(
@@ -80,7 +80,7 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Credenciais inválidas');
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     // Verificar se MFA está habilitado
@@ -106,8 +106,8 @@ export class AuthService {
         mfa_required: true,
         mfa_token: mfaToken,
         available_methods: availableMethods,
-        message: 'MFA é obrigatório. Por favor, forneça o código MFA.',
-      };
+          message: 'MFA is required. Please provide the MFA code.',
+        };
     }
 
     // Atualizar último login
@@ -148,7 +148,7 @@ export class AuthService {
 
     // Validar domain_id
     if (payload.domain_id !== domainId) {
-      throw new UnauthorizedException('Token não pertence a este domínio');
+      throw new UnauthorizedException('Token does not belong to this domain');
     }
 
     // Validar refresh token no Redis
@@ -159,13 +159,13 @@ export class AuthService {
     );
 
     if (!isValid) {
-      throw new UnauthorizedException('Refresh token inválido ou expirado');
+      throw new UnauthorizedException('Refresh token invalid or expired');
     }
 
     // Buscar usuário
     const user = await this.userService.findByEmail(domainId, payload.email);
     if (!user || !user.is_active) {
-      throw new UnauthorizedException('Usuário não encontrado ou inativo');
+      throw new UnauthorizedException('User not found or inactive');
     }
 
     // Buscar domínio
@@ -232,13 +232,13 @@ export class AuthService {
     const stored = await redisClient.get(redisKey);
 
     if (!stored) {
-      throw new UnauthorizedException('Token MFA inválido ou expirado');
+      throw new UnauthorizedException('MFA token invalid or expired');
     }
 
     // Verificar código MFA
     const isValid = await this.mfaService.verifyMfa(domainId, userId, code, mfaType);
     if (!isValid) {
-      throw new UnauthorizedException('Código MFA inválido');
+      throw new UnauthorizedException('MFA code invalid');
     }
 
     // Remover token temporário
@@ -247,7 +247,7 @@ export class AuthService {
     // Buscar usuário e domínio
     const user = await this.userService.findByEmail(domainId, payload.email);
     if (!user || !user.is_active) {
-      throw new UnauthorizedException('Usuário não encontrado ou inativo');
+      throw new UnauthorizedException('User not found or inactive');
     }
 
     const domain = await this.domainRepository.findOne({

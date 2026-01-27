@@ -32,10 +32,10 @@ export class MfaController {
   @Post('setup')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 tentativas por minuto
-  @ApiOperation({ summary: 'Configurar MFA (TOTP)' })
+  @ApiOperation({ summary: 'Configure MFA (TOTP)' })
   @ApiResponse({
     status: 200,
-    description: 'MFA configurado com sucesso. Retorna QR code e códigos de backup.',
+    description: 'MFA configured successfully. Returns QR code and backup codes.',
   })
   async setupMfa(
     @Body() mfaSetupDto: MfaSetupDto,
@@ -49,7 +49,7 @@ export class MfaController {
     const userId = req.user?.sub;
 
     if (!domainId || !userId) {
-      throw new Error('Domain context e usuário são obrigatórios');
+      throw new Error('Domain context and user are required');
     }
 
     return this.mfaService.setupMfa(
@@ -62,12 +62,12 @@ export class MfaController {
   @Post('verify')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 3, ttl: 600000 } }) // 3 tentativas por 10 minutos
-  @ApiOperation({ summary: 'Verificar código MFA para habilitar' })
+  @ApiOperation({ summary: 'Verify MFA code to enable' })
   @ApiResponse({
     status: 200,
-    description: 'MFA habilitado com sucesso',
+    description: 'MFA enabled successfully',
   })
-  @ApiResponse({ status: 400, description: 'Código inválido' })
+  @ApiResponse({ status: 400, description: 'Invalid code' })
   async verifyMfa(
     @Body() mfaVerifyDto: MfaVerifyDto,
     @Request() req: any,
@@ -76,7 +76,7 @@ export class MfaController {
     const userId = req.user?.sub;
 
     if (!domainId || !userId) {
-      throw new Error('Domain context e usuário são obrigatórios');
+      throw new Error('Domain context and user are required');
     }
 
     await this.mfaService.enableMfa(
@@ -88,41 +88,41 @@ export class MfaController {
 
     return {
       success: true,
-      message: 'MFA habilitado com sucesso',
+      message: 'MFA enabled successfully',
     };
   }
 
   @Post('disable')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 2, ttl: 86400000 } }) // 2 tentativas por dia
-  @ApiOperation({ summary: 'Desabilitar MFA' })
+  @ApiOperation({ summary: 'Disable MFA' })
   @ApiResponse({
     status: 200,
-    description: 'MFA desabilitado com sucesso',
+    description: 'MFA disabled successfully',
   })
   async disableMfa(@Request() req: any): Promise<{ success: boolean; message: string }> {
     const domainId = req.domainContext?.domainId;
     const userId = req.user?.sub;
 
     if (!domainId || !userId) {
-      throw new Error('Domain context e usuário são obrigatórios');
+      throw new Error('Domain context and user are required');
     }
 
     await this.mfaService.disableMfa(domainId, userId);
 
     return {
       success: true,
-      message: 'MFA desabilitado com sucesso',
+      message: 'MFA disabled successfully',
     };
   }
 
   @Get('backup-codes')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 3, ttl: 3600000 } }) // 3 tentativas por hora
-  @ApiOperation({ summary: 'Gerar novos códigos de backup' })
+  @ApiOperation({ summary: 'Generate new backup codes' })
   @ApiResponse({
     status: 200,
-    description: 'Novos códigos de backup gerados',
+    description: 'New backup codes generated',
   })
   async generateBackupCodes(
     @Request() req: any,
@@ -131,7 +131,7 @@ export class MfaController {
     const userId = req.user?.sub;
 
     if (!domainId || !userId) {
-      throw new Error('Domain context e usuário são obrigatórios');
+      throw new Error('Domain context and user are required');
     }
 
     const backupCodes = await this.mfaService.generateBackupCodes(
@@ -145,7 +145,7 @@ export class MfaController {
   @Post('send-code')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 tentativas por minuto
-  @ApiOperation({ summary: 'Enviar código MFA via SMS ou Email' })
+  @ApiOperation({ summary: 'Send MFA code via SMS or Email' })
   @ApiBody({
     schema: {
       type: 'object',
@@ -153,7 +153,7 @@ export class MfaController {
         method: {
           type: 'string',
           enum: [MfaType.SMS, MfaType.EMAIL],
-          description: 'Método MFA (sms ou email)',
+          description: 'MFA method (sms or email)',
         },
       },
       required: ['method'],
@@ -161,7 +161,7 @@ export class MfaController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Código enviado com sucesso',
+    description: 'Code sent successfully',
   })
   async sendMfaCode(
     @Body() body: { method: MfaType },
@@ -171,7 +171,7 @@ export class MfaController {
     const userId = req.user?.sub;
 
     if (!domainId || !userId) {
-      throw new Error('Domain context e usuário são obrigatórios');
+      throw new Error('Domain context and user are required');
     }
 
     const { code, expiresIn } = await this.mfaService.sendMfaCode(
@@ -182,7 +182,7 @@ export class MfaController {
 
     return {
       success: true,
-      message: `Código enviado via ${body.method}`,
+      message: `Code sent via ${body.method}`,
       expiresIn,
     };
   }

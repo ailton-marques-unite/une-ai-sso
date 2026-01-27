@@ -35,22 +35,22 @@ export class AuthController {
   @Public()
   @HttpCode(HttpStatus.CREATED)
   @Throttle({ default: { limit: 3, ttl: 3600000 } }) // 3 tentativas por hora
-  @ApiOperation({ summary: 'Registrar novo usuário' })
+  @ApiOperation({ summary: 'Register new user' })
   @ApiBody({ type: CreateUserDto })
   @ApiResponse({
     status: 201,
-    description: 'Usuário criado com sucesso',
+    description: 'User created successfully',
     type: UserResponseDto,
   })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiResponse({ status: 409, description: 'Email já está em uso' })
+  @ApiResponse({ status: 400, description: 'Invalid data' })
+  @ApiResponse({ status: 409, description: 'Email already in use' })
   async register(
     @Body() createUserDto: CreateUserDto,
     @Request() req: any,
   ): Promise<UserResponseDto> {
     const domainId = req.domainContext?.domainId;
     if (!domainId) {
-      throw new Error('Domain context é obrigatório para registro');
+      throw new Error('Domain context is required for registration');
     }
     return this.authService.register(domainId, createUserDto);
   }
@@ -59,14 +59,14 @@ export class AuthController {
   @Public()
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 900000 } }) // 5 tentativas por 15 minutos
-  @ApiOperation({ summary: 'Login com credenciais' })
+  @ApiOperation({ summary: 'Login with credentials' })
   @ApiBody({ type: LoginDto })
   @ApiResponse({
     status: 200,
-    description: 'Login realizado com sucesso',
+    description: 'Login successful',
     type: LoginResponseDto,
   })
-  @ApiResponse({ status: 401, description: 'Credenciais inválidas' })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(
     @Body() loginDto: LoginDto,
     @Request() req: any,
@@ -75,7 +75,7 @@ export class AuthController {
     const domainId = loginDto.domain_id || req.domainContext?.domainId;
     if (!domainId) {
       throw new BadRequestException(
-        'Domain context é obrigatório. Forneça domain_id no body ou via header x-domain-id/x-domain-slug',
+        'Domain context is required. Provide domain_id in the body or via header x-domain-id/x-domain-slug',
       );
     }
     return this.authService.login({ ...loginDto, domain_id: domainId });
@@ -85,21 +85,21 @@ export class AuthController {
   @Public()
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 tentativas por minuto
-  @ApiOperation({ summary: 'Renovar access token usando refresh token' })
+  @ApiOperation({ summary: 'Refresh access token using refresh token' })
   @ApiBody({ type: RefreshTokenDto })
   @ApiResponse({
     status: 200,
-    description: 'Token renovado com sucesso',
+    description: 'Token refreshed successfully',
     type: LoginResponseDto,
   })
-  @ApiResponse({ status: 401, description: 'Refresh token inválido' })
+  @ApiResponse({ status: 401, description: 'Invalid refresh token' })
   async refresh(
     @Body() refreshTokenDto: RefreshTokenDto,
     @Request() req: any,
   ): Promise<LoginResponseDto> {
     const domainId = req.domainContext?.domainId;
     if (!domainId) {
-      throw new Error('Domain context é obrigatório para refresh token');
+      throw new Error('Domain context is required for refresh token');
     }
     return this.authService.refreshToken(domainId, refreshTokenDto.refresh_token);
   }
@@ -108,9 +108,9 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Logout - revogar tokens' })
-  @ApiResponse({ status: 200, description: 'Logout realizado com sucesso' })
-  @ApiResponse({ status: 401, description: 'Não autorizado' })
+  @ApiOperation({ summary: 'Logout - revoke tokens' })
+  @ApiResponse({ status: 200, description: 'Logout successful' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   async logout(
     @Body() body: { refresh_token?: string },
     @Request() req: any,
@@ -119,14 +119,14 @@ export class AuthController {
     const userId = req.user?.sub;
 
     if (!domainId || !userId) {
-      throw new Error('Domain context e usuário são obrigatórios');
+      throw new Error('Domain context and user are required');
     }
 
     await this.authService.logout(domainId, userId, body.refresh_token);
 
     return {
       success: true,
-      message: 'Logout realizado com sucesso',
+      message: 'Logout successful',
     };
   }
 
@@ -134,14 +134,14 @@ export class AuthController {
   @Public()
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 3, ttl: 600000 } }) // 3 tentativas por 10 minutos
-  @ApiOperation({ summary: 'Verificar código MFA após login' })
+  @ApiOperation({ summary: 'Verify MFA code after login' })
   @ApiBody({ type: MfaChallengeDto })
   @ApiResponse({
     status: 200,
-    description: 'MFA verificado com sucesso, tokens JWT retornados',
+    description: 'MFA verified successfully, JWT tokens returned',
     type: LoginResponseDto,
   })
-  @ApiResponse({ status: 401, description: 'Código MFA inválido' })
+  @ApiResponse({ status: 401, description: 'Invalid MFA code' })
   async verifyMfaChallenge(
     @Body() mfaChallengeDto: MfaChallengeDto,
   ): Promise<LoginResponseDto> {

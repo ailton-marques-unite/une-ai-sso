@@ -102,12 +102,16 @@
     ],
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
+    "testPathIgnorePatterns": [
+      "/database/migrations/"
+    ],
     "passWithNoTests": true,
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "**/*.(t|j)s",
+      "!database/migrations/**"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"

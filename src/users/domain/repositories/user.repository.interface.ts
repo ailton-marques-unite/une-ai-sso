@@ -4,7 +4,7 @@ import { CreateUserDto } from '../../application/dtos/create-user.dto';
 export interface IUserRepository {
   findByEmail(domainId: string, email: string): Promise<User | null>;
   findById(domainId: string, id: string): Promise<User | null>;
-  create(domainId: string, userData: CreateUserDto): Promise<User>;
+  create(domainId: string, userData: Omit<CreateUserDto, 'password'> & { password_hash?: string }): Promise<User>;
   update(domainId: string, id: string, userData: Partial<User>): Promise<User>;
   updateLastLogin(domainId: string, userId: string): Promise<void>;
   existsByEmail(domainId: string, email: string): Promise<boolean>;
