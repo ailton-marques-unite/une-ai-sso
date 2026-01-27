@@ -5,15 +5,5 @@
   "testRegex": ".e2e-spec.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
-  },
-  "coveragePathIgnorePatterns": [
-    ".src/database/**",
-    "src/migrations/**",
-    "src/seeds/**",
-    "src/test/**",
-    "src/utils/**",
-    "src/config/**",
-    "src/logger/**",
-    "src/database/data-source.ts"
-  ]
+  }
 }
