@@ -35,7 +35,7 @@ export class EmailService {
     domainName?: string,
   ): Promise<{ code: string; expiresIn: number }> {
     if (!this.isConfigured) {
-      throw new BadRequestException('Email service não configurado');
+      throw new BadRequestException('Email service not configured');
     }
 
     // Gerar código de 6 dígitos
