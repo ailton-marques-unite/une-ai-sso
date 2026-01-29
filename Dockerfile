@@ -23,7 +23,7 @@ RUN chmod +x /docker-init-db.sh
 EXPOSE 3000
 
 # Executar script de inicialização e depois iniciar a aplicação
-CMD ["/docker-init-db.sh", "yarn", "start:dev"]
+CMD ["/docker-init-db.sh", "yarn", "start"]
 
 
 
