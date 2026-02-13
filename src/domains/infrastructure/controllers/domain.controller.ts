@@ -20,6 +20,7 @@ import {
   ApiParam,
   ApiQuery,
   ApiBearerAuth,
+  ApiSecurity,
 } from '@nestjs/swagger';
 import { DomainService } from '../../application/services/domain-service/domain.service';
 import { CreateDomainDto } from '../../application/dtos/create-domain.dto';
@@ -53,6 +54,7 @@ export class DomainController {
 
   @Get()
   @ApiOperation({ summary: 'Listar domínios' })
+  @ApiSecurity('domain-slug')
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'is_active', required: false, type: Boolean })
@@ -68,6 +70,7 @@ export class DomainController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Obter domínio por ID' })
+  @ApiSecurity('domain-slug')
   @ApiParam({ name: 'id', description: 'ID do domínio' })
   @ApiResponse({
     status: 200,
@@ -85,6 +88,7 @@ export class DomainController {
 
   @Get('slug/:slug')
   @ApiOperation({ summary: 'Obter domínio por slug' })
+  @ApiSecurity('domain-slug')
   @ApiParam({ name: 'slug', description: 'Slug do domínio' })
   @ApiResponse({
     status: 200,
@@ -102,6 +106,7 @@ export class DomainController {
 
   @Put(':id')
   @ApiOperation({ summary: 'Atualizar domínio' })
+  @ApiSecurity('domain-slug')
   @ApiParam({ name: 'id', description: 'ID do domínio' })
   @ApiResponse({
     status: 200,
@@ -125,6 +130,7 @@ export class DomainController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Desativar domínio (soft delete)' })
+  @ApiSecurity('domain-slug')
   @ApiParam({ name: 'id', description: 'ID do domínio' })
   @ApiResponse({ status: 204, description: 'Domínio desativado com sucesso' })
   @ApiResponse({ status: 404, description: 'Domínio não encontrado' })
@@ -135,6 +141,7 @@ export class DomainController {
 
   @Patch(':id/activate')
   @ApiOperation({ summary: 'Reativar domínio' })
+  @ApiSecurity('domain-slug')
   @ApiParam({ name: 'id', description: 'ID do domínio' })
   @ApiResponse({
     status: 200,

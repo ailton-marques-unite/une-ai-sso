@@ -2,12 +2,10 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  Inject,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { UserRole } from '../../../domain/entities/user-role.entity';
-import { DomainRole } from '../../../../domains/domain/entities/domain-role.entity';
-import { User } from '../../../domain/entities/user.entity';
+import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
+import { UserRoleService } from '../user-role-service/user-role.service';
 
 export interface UserRolesAndPermissions {
   roles: string[];
@@ -17,22 +15,16 @@ export interface UserRolesAndPermissions {
 @Injectable()
 export class RbacService {
   constructor(
-    @InjectRepository(UserRole)
-    private readonly userRoleRepository: Repository<UserRole>,
-    @InjectRepository(DomainRole)
-    private readonly domainRoleRepository: Repository<DomainRole>,
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    @Inject('IUserRepository')
+    private readonly userRepository: IUserRepository,
+    private readonly userRoleService: UserRoleService,
   ) {}
 
   async getUserRolesAndPermissions(
     domainId: string,
     userId: string,
   ): Promise<UserRolesAndPermissions> {
-    const user = await this.userRepository.findOne({
-      where: { id: userId, domain_id: domainId },
-      relations: ['roles', 'roles.role'],
-    });
+    const user = await this.userRepository.findById(domainId, userId);
 
     if (!user) {
       throw new NotFoundException('User not found');
@@ -65,40 +57,9 @@ export class RbacService {
     userId: string,
     roleId: string,
   ): Promise<void> {
-    // Verificar se usuário existe e pertence ao domínio
-    const user = await this.userRepository.findOne({
-      where: { id: userId, domain_id: domainId },
+    await this.userRoleService.assignRoleToUser(domainId, userId, {
+      domainRoleId: roleId,
     });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    // Verificar se role existe e pertence ao domínio
-    const role = await this.domainRoleRepository.findOne({
-      where: { id: roleId, domain_id: domainId },
-    });
-
-    if (!role) {
-      throw new NotFoundException('Role not found');
-    }
-
-    // Verificar se já existe a associação
-    const existing = await this.userRoleRepository.findOne({
-      where: { user_id: userId, role_id: roleId },
-    });
-
-    if (existing) {
-      return; // Já está associado
-    }
-
-    // Criar associação
-    const userRole = this.userRoleRepository.create({
-      user_id: userId,
-      role_id: roleId,
-    });
-
-    await this.userRoleRepository.save(userRole);
   }
 
   async removeRoleFromUser(
@@ -106,27 +67,7 @@ export class RbacService {
     userId: string,
     roleId: string,
   ): Promise<void> {
-    // Verificar se usuário e role pertencem ao domínio
-    const user = await this.userRepository.findOne({
-      where: { id: userId, domain_id: domainId },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    const role = await this.domainRoleRepository.findOne({
-      where: { id: roleId, domain_id: domainId },
-    });
-
-    if (!role) {
-      throw new NotFoundException('Role not found');
-    }
-
-    await this.userRoleRepository.delete({
-      user_id: userId,
-      role_id: roleId,
-    });
+    await this.userRoleService.removeRoleFromUser(domainId, userId, roleId);
   }
 
   async hasPermission(

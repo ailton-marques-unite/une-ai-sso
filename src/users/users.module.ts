@@ -10,6 +10,7 @@ import { PasswordResetToken } from './domain/entities/password-reset-token.entit
 import { Domain } from '../domains/domain/entities/domain.entity';
 import { DomainRole } from '../domains/domain/entities/domain-role.entity';
 import { UserRepository } from './infrastructure/repositories/user.repository';
+import { UserRoleRepository } from './infrastructure/repositories/user-role.repository';
 import { UserService } from './application/services/user-service/user.service';
 import { AuthService } from './application/services/auth-service/auth.service';
 import { PasswordRecoveryService } from './application/services/password-recovery-service/password-recovery.service';
@@ -19,8 +20,11 @@ import { RefreshTokenService } from '../shared/services/refresh-token.service';
 import { JwtStrategy } from '../shared/strategies/jwt.strategy';
 import { AuthController } from './infrastructure/controllers/auth.controller';
 import { UserController } from './infrastructure/controllers/user.controller';
+import { UserRoleController } from './infrastructure/controllers/user-role.controller';
 import { PasswordRecoveryController } from './infrastructure/controllers/password-recovery.controller';
 import { RbacService } from './application/services/rbac-service/rbac.service';
+import { UserRoleService } from './application/services/user-role-service/user-role.service';
+import { RbacController } from './infrastructure/controllers/rbac.controller';
 import { MfaService } from './application/services/mfa-service/mfa.service';
 import { SsoService } from './application/services/sso-service/sso.service';
 import { RolesGuard } from '../shared/guards/roles.guard';
@@ -56,6 +60,8 @@ import { RedisModule } from '../shared/infrastructure/redis/redis.module';
   controllers: [
     AuthController,
     UserController,
+    UserRoleController,
+    RbacController,
     PasswordRecoveryController,
     MfaController,
     SsoController,
@@ -66,10 +72,16 @@ import { RedisModule } from '../shared/infrastructure/redis/redis.module';
       provide: 'IUserRepository',
       useClass: UserRepository,
     },
+    UserRoleRepository,
+    {
+      provide: 'IUserRoleRepository',
+      useClass: UserRoleRepository,
+    },
     UserService,
     AuthService,
     PasswordRecoveryService,
     RbacService,
+    UserRoleService,
     MfaService,
     SsoService,
     SmsService,
