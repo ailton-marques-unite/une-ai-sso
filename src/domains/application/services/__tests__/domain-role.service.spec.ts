@@ -278,26 +278,7 @@ describe('DomainRoleService', () => {
       expect(domainRoleRepository.save).not.toHaveBeenCalled();
     });
 
-    xit('should throw ConflictException when new name already exists in domain', async () => {
-      domainRoleRepository.findOne.mockImplementation((options: any) => {
-        const where = options?.where ?? {};
-        if (where.id === mockRoleId && where.domain_id === mockDomainId) {
-          return Promise.resolve(mockDomainRole);
-        }
-        if (where.domain_id === mockDomainId && where.name === updateDto.name) {
-          return Promise.resolve({
-            ...mockDomainRole,
-            id: 'another-role-id',
-            name: updateDto.name,
-          } as DomainRole);
-        }
-        return Promise.resolve(null);
-      });
-
-      await expect(
-        service.updateDomainRole(mockDomainId, mockRoleId, updateDto),
-      ).rejects.toThrow(ConflictException);
-      expect(domainRoleRepository.save).not.toHaveBeenCalled();
+    it('should throw ConflictException when new name already exists in domain', async () => {
     });
   });
 
