@@ -15,6 +15,7 @@ import { Domain } from '../../../../domains/domain/entities/domain.entity';
 import { User } from '../../../domain/entities/user.entity';
 import { ForgotPasswordDto } from '../../dtos/forgot-password.dto';
 import { ResetPasswordDto } from '../../dtos/reset-password.dto';
+import { APP_LOGGER } from '../../../../shared/utils/logger';
 
 describe('PasswordRecoveryService', () => {
   let service: PasswordRecoveryService;
@@ -143,6 +144,10 @@ describe('PasswordRecoveryService', () => {
           useValue: {
             findOne: jest.fn(),
           },
+        },
+        {
+          provide: APP_LOGGER,
+          useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
         },
       ],
     }).compile();
@@ -545,16 +550,20 @@ describe('PasswordRecoveryService', () => {
               findOne: jest.fn(),
             },
           },
-          {
-            provide: getRepositoryToken(Domain),
-            useValue: {
-              findOne: jest.fn(),
-            },
+        {
+          provide: getRepositoryToken(Domain),
+          useValue: {
+            findOne: jest.fn(),
           },
-        ],
-      }).compile();
+        },
+        {
+          provide: APP_LOGGER,
+          useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
+        },
+      ],
+    }).compile();
 
-      const testService = module.get<PasswordRecoveryService>(PasswordRecoveryService);
+    const testService = module.get<PasswordRecoveryService>(PasswordRecoveryService);
       const testUserService = module.get<UserService>(UserService);
       const testPasswordResetTokenRepository = module.get<Repository<PasswordResetToken>>(
         getRepositoryToken(PasswordResetToken),
@@ -630,16 +639,20 @@ describe('PasswordRecoveryService', () => {
               findOne: jest.fn(),
             },
           },
-          {
-            provide: getRepositoryToken(Domain),
-            useValue: {
-              findOne: jest.fn(),
-            },
+        {
+          provide: getRepositoryToken(Domain),
+          useValue: {
+            findOne: jest.fn(),
           },
-        ],
-      }).compile();
+        },
+        {
+          provide: APP_LOGGER,
+          useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
+        },
+      ],
+    }).compile();
 
-      const testService = module.get<PasswordRecoveryService>(PasswordRecoveryService);
+    const testService = module.get<PasswordRecoveryService>(PasswordRecoveryService);
       const testUserService = module.get<UserService>(UserService);
       const testPasswordResetTokenRepository = module.get<Repository<PasswordResetToken>>(
         getRepositoryToken(PasswordResetToken),
@@ -715,16 +728,20 @@ describe('PasswordRecoveryService', () => {
               findOne: jest.fn(),
             },
           },
-          {
-            provide: getRepositoryToken(Domain),
-            useValue: {
-              findOne: jest.fn(),
-            },
+        {
+          provide: getRepositoryToken(Domain),
+          useValue: {
+            findOne: jest.fn(),
           },
-        ],
-      }).compile();
+        },
+        {
+          provide: APP_LOGGER,
+          useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
+        },
+      ],
+    }).compile();
 
-      const testService = module.get<PasswordRecoveryService>(PasswordRecoveryService);
+    const testService = module.get<PasswordRecoveryService>(PasswordRecoveryService);
       const testUserService = module.get<UserService>(UserService);
       const testPasswordResetTokenRepository = module.get<Repository<PasswordResetToken>>(
         getRepositoryToken(PasswordResetToken),
@@ -800,16 +817,20 @@ describe('PasswordRecoveryService', () => {
               findOne: jest.fn(),
             },
           },
-          {
-            provide: getRepositoryToken(Domain),
-            useValue: {
-              findOne: jest.fn(),
-            },
+        {
+          provide: getRepositoryToken(Domain),
+          useValue: {
+            findOne: jest.fn(),
           },
-        ],
-      }).compile();
+        },
+        {
+          provide: APP_LOGGER,
+          useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
+        },
+      ],
+    }).compile();
 
-      const testService = module.get<PasswordRecoveryService>(PasswordRecoveryService);
+    const testService = module.get<PasswordRecoveryService>(PasswordRecoveryService);
       const testUserService = module.get<UserService>(UserService);
       const testPasswordResetTokenRepository = module.get<Repository<PasswordResetToken>>(
         getRepositoryToken(PasswordResetToken),
@@ -885,16 +906,20 @@ describe('PasswordRecoveryService', () => {
               findOne: jest.fn(),
             },
           },
-          {
-            provide: getRepositoryToken(Domain),
-            useValue: {
-              findOne: jest.fn(),
-            },
+        {
+          provide: getRepositoryToken(Domain),
+          useValue: {
+            findOne: jest.fn(),
           },
-        ],
-      }).compile();
+        },
+        {
+          provide: APP_LOGGER,
+          useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
+        },
+      ],
+    }).compile();
 
-      const testService = module.get<PasswordRecoveryService>(PasswordRecoveryService);
+    const testService = module.get<PasswordRecoveryService>(PasswordRecoveryService);
       const testUserService = module.get<UserService>(UserService);
       const testPasswordResetTokenRepository = module.get<Repository<PasswordResetToken>>(
         getRepositoryToken(PasswordResetToken),

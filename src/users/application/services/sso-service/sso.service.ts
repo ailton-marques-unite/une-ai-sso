@@ -14,6 +14,7 @@ import { AppJwtService } from '../../../../shared/services/jwt.service';
 import { RefreshTokenService } from '../../../../shared/services/refresh-token.service';
 import { Domain } from '../../../../domains/domain/entities/domain.entity';
 import { User } from '../../../domain/entities/user.entity';
+import { AppLogger, APP_LOGGER } from '../../../../shared/utils/logger';
 import axios from 'axios';
 
 export interface GoogleUserInfo {
@@ -36,6 +37,7 @@ export interface MicrosoftUserInfo {
 
 @Injectable()
 export class SsoService {
+  private readonly context = SsoService.name;
   private readonly googleClientId: string;
   private readonly googleClientSecret: string;
   private readonly googleRedirectUri: string;
@@ -54,6 +56,8 @@ export class SsoService {
     private readonly jwtService: AppJwtService,
     private readonly refreshTokenService: RefreshTokenService,
     @Inject('REDIS_CLIENT') private readonly redisClient: Redis,
+    @Inject(APP_LOGGER)
+    private readonly logger: AppLogger,
   ) {
     this.googleClientId = this.configService.get<string>('GOOGLE_CLIENT_ID') || '';
     this.googleClientSecret = this.configService.get<string>('GOOGLE_CLIENT_SECRET') || '';
@@ -68,6 +72,7 @@ export class SsoService {
     authUrl: string;
     state: string;
   }> {
+    this.logger.log('initiateGoogleOAuth started', this.context, domainId);
     if (!this.googleClientId || !this.googleClientSecret) {
       throw new BadRequestException('Google OAuth not configured');
     }
@@ -92,6 +97,7 @@ export class SsoService {
 
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 
+    this.logger.log('initiateGoogleOAuth completed', this.context, domainId);
     return { authUrl, state };
   }
 
@@ -104,6 +110,7 @@ export class SsoService {
     expires_in: number;
     token_type: string;
   }> {
+    this.logger.log('handleGoogleCallback started', this.context);
     // Validar state
     const stateKey = `sso_state:${state}`;
     const storedDomainId = await this.redisClient.get(stateKey);
@@ -234,6 +241,7 @@ export class SsoService {
       refreshToken,
     );
 
+    this.logger.log('handleGoogleCallback completed', this.context, domainId);
     return {
       access_token: accessToken,
       refresh_token: refreshToken,
@@ -246,6 +254,7 @@ export class SsoService {
     authUrl: string;
     state: string;
   }> {
+    this.logger.log('initiateMicrosoftOAuth started', this.context, domainId);
     if (!this.microsoftClientId || !this.microsoftClientSecret) {
       throw new BadRequestException('Microsoft OAuth not configured');
     }
@@ -271,6 +280,7 @@ export class SsoService {
 
     const authUrl = `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/authorize?${params.toString()}`;
 
+    this.logger.log('initiateMicrosoftOAuth completed', this.context, domainId);
     return { authUrl, state };
   }
 
@@ -283,6 +293,7 @@ export class SsoService {
     expires_in: number;
     token_type: string;
   }> {
+    this.logger.log('handleMicrosoftCallback started', this.context);
     // Validar state
     const stateKey = `sso_state:${state}`;
     const storedDomainId = await this.redisClient.get(stateKey);
@@ -402,6 +413,7 @@ export class SsoService {
       refreshToken,
     );
 
+    this.logger.log('handleMicrosoftCallback completed', this.context, domainId);
     return {
       access_token: accessToken,
       refresh_token: refreshToken,

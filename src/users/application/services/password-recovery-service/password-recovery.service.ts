@@ -16,9 +16,11 @@ import { PasswordResetToken } from '../../../domain/entities/password-reset-toke
 import { Domain } from '../../../../domains/domain/entities/domain.entity';
 import { ForgotPasswordDto } from '../../dtos/forgot-password.dto';
 import { ResetPasswordDto } from '../../dtos/reset-password.dto';
+import { AppLogger, APP_LOGGER } from '../../../../shared/utils/logger';
 
 @Injectable()
 export class PasswordRecoveryService {
+  private readonly context = PasswordRecoveryService.name;
   private readonly tokenTtl: number; // em segundos
 
   constructor(
@@ -31,6 +33,8 @@ export class PasswordRecoveryService {
     private readonly passwordResetTokenRepository: Repository<PasswordResetToken>,
     @InjectRepository(Domain)
     private readonly domainRepository: Repository<Domain>,
+    @Inject(APP_LOGGER)
+    private readonly logger: AppLogger,
   ) {
     // Converter PASSWORD_RESET_TOKEN_EXPIRES_IN (ex: "30m") para segundos
     const expiresIn = this.configService.get<string>(
@@ -44,6 +48,7 @@ export class PasswordRecoveryService {
     domainId: string,
     forgotPasswordDto: ForgotPasswordDto,
   ): Promise<{ success: boolean; message: string }> {
+    this.logger.log('requestPasswordReset started', this.context, domainId);
     const { email } = forgotPasswordDto;
 
     // Buscar usuário
@@ -87,6 +92,7 @@ export class PasswordRecoveryService {
       domain?.name,
     );
 
+    this.logger.log('requestPasswordReset completed', this.context, domainId);
     return {
       success: true,
       message: 'Se o email existir, um link de recuperação será enviado',
@@ -97,6 +103,7 @@ export class PasswordRecoveryService {
     domainId: string,
     resetPasswordDto: ResetPasswordDto,
   ): Promise<{ success: boolean; message: string }> {
+    this.logger.log('resetPassword started', this.context, domainId);
     const { token, new_password } = resetPasswordDto;
 
     // Buscar token no banco
@@ -154,12 +161,15 @@ export class PasswordRecoveryService {
     });
 
     // Enviar email de confirmação (usando método específico se existir, senão usar o mesmo)
-    // Por enquanto, apenas logar em desenvolvimento
     if (this.emailService['isConfigured']) {
-      // TODO: Criar método específico para confirmação de reset
-      console.log(`Password reset confirmed for ${resetToken.user.email} in domain ${domain?.name}`);
+      this.logger.log(
+        'Password reset confirmed',
+        this.context,
+        domainId,
+      );
     }
 
+    this.logger.log('resetPassword completed', this.context, domainId);
     return {
       success: true,
       message: 'Senha redefinida com sucesso',

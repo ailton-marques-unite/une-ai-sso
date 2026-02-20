@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { UnauthorizedException } from '@nestjs/common';
 import { AppJwtService, JwtPayload } from '../jwt.service';
 import { User } from '../../../users/domain/entities/user.entity';
+import { APP_LOGGER } from '../../utils/logger';
 
 describe('AppJwtService', () => {
   let service: AppJwtService;
@@ -68,6 +69,10 @@ describe('AppJwtService', () => {
               return config[key] || defaultValue;
             }),
           },
+        },
+        {
+          provide: APP_LOGGER,
+          useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
         },
       ],
     }).compile();
@@ -177,6 +182,10 @@ describe('AppJwtService', () => {
                 return defaultValue;
               }),
             },
+          },
+          {
+            provide: APP_LOGGER,
+            useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
           },
         ],
       }).compile();
@@ -326,6 +335,10 @@ describe('AppJwtService', () => {
                 return defaultValue;
               }),
             },
+          },
+          {
+            provide: APP_LOGGER,
+            useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
           },
         ],
       }).compile();

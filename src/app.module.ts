@@ -12,10 +12,12 @@ import { AppThrottlerModule } from './shared/infrastructure/throttler/throttler.
 import { ThrottlerDomainGuard } from './shared/infrastructure/throttler/throttler-domain.guard';
 import { HealthController } from './shared/infrastructure/controllers/health.controller';
 import { UsersModule } from './users/users.module';
+import { LoggerModule } from './shared/logger/logger.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    LoggerModule,
     TypeOrmModule.forRoot(typeOrmConfig),
     TypeOrmModule.forFeature([Domain, DomainRole]),
     RedisModule,

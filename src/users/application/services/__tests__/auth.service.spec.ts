@@ -12,6 +12,7 @@ import { AppJwtService } from '../../../../shared/services/jwt.service';
 import { RefreshTokenService } from '../../../../shared/services/refresh-token.service';
 import { MfaService } from '../mfa-service/mfa.service';
 import { Domain } from '../../../../domains/domain/entities/domain.entity';
+import { APP_LOGGER } from '../../../../shared/utils/logger';
 import { User } from '../../../domain/entities/user.entity';
 import { MfaType } from '../../../domain/entities/user-mfa.entity';
 import { LoginDto } from '../../dtos/login.dto';
@@ -152,6 +153,10 @@ describe('AuthService', () => {
           useValue: {
             findOne: jest.fn(),
           },
+        },
+        {
+          provide: APP_LOGGER,
+          useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
         },
       ],
     }).compile();

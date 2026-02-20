@@ -7,6 +7,7 @@ import {
 import { UserService } from '../user-service/user.service';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
 import { PasswordService } from '../../../../shared/services/password.service';
+import { APP_LOGGER } from '../../../../shared/utils/logger';
 import { User } from '../../../domain/entities/user.entity';
 import { CreateUserDto } from '../../dtos/create-user.dto';
 import { UserResponseDto } from '../../dtos/user-response.dto';
@@ -85,6 +86,10 @@ describe('UserService', () => {
             validatePasswordStrength: jest.fn(),
             hashPassword: jest.fn(),
           },
+        },
+        {
+          provide: APP_LOGGER,
+          useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
         },
       ],
     }).compile();

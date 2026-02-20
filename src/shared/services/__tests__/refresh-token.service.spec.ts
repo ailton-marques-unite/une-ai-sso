@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
 import { RefreshTokenService } from '../refresh-token.service';
+import { APP_LOGGER } from '../../utils/logger';
 
 describe('RefreshTokenService', () => {
   let service: RefreshTokenService;
@@ -41,6 +42,10 @@ describe('RefreshTokenService', () => {
         {
           provide: 'REDIS_CLIENT',
           useValue: redisClient,
+        },
+        {
+          provide: APP_LOGGER,
+          useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
         },
       ],
     }).compile();
@@ -93,6 +98,10 @@ describe('RefreshTokenService', () => {
             provide: 'REDIS_CLIENT',
             useValue: redisClient,
           },
+          {
+            provide: APP_LOGGER,
+            useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
+          },
         ],
       }).compile();
 
@@ -144,6 +153,10 @@ describe('RefreshTokenService', () => {
             provide: 'REDIS_CLIENT',
             useValue: redisClient,
           },
+          {
+            provide: APP_LOGGER,
+            useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
+          },
         ],
       }).compile();
 
@@ -180,6 +193,10 @@ describe('RefreshTokenService', () => {
           {
             provide: 'REDIS_CLIENT',
             useValue: redisClient,
+          },
+          {
+            provide: APP_LOGGER,
+            useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
           },
         ],
       }).compile();
@@ -218,6 +235,10 @@ describe('RefreshTokenService', () => {
             provide: 'REDIS_CLIENT',
             useValue: redisClient,
           },
+          {
+            provide: APP_LOGGER,
+            useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
+          },
         ],
       }).compile();
 
@@ -254,6 +275,10 @@ describe('RefreshTokenService', () => {
           {
             provide: 'REDIS_CLIENT',
             useValue: redisClient,
+          },
+          {
+            provide: APP_LOGGER,
+            useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
           },
         ],
       }).compile();
@@ -292,6 +317,10 @@ describe('RefreshTokenService', () => {
             provide: 'REDIS_CLIENT',
             useValue: redisClient,
           },
+          {
+            provide: APP_LOGGER,
+            useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
+          },
         ],
       }).compile();
 
@@ -327,6 +356,10 @@ describe('RefreshTokenService', () => {
           {
             provide: 'REDIS_CLIENT',
             useValue: redisClient,
+          },
+          {
+            provide: APP_LOGGER,
+            useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
           },
         ],
       }).compile();

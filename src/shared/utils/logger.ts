@@ -1,6 +1,9 @@
 import { LoggerService } from '@nestjs/common';
 import * as winston from 'winston';
 
+/** Injection token for AppLogger so it can be injected without replacing Nest's default Logger. */
+export const APP_LOGGER = 'AppLogger';
+
 export class AppLogger implements LoggerService {
   private logger: winston.Logger;
 

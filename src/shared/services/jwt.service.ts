@@ -1,7 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { User } from '../../users/domain/entities/user.entity';
+import { AppLogger, APP_LOGGER } from '../utils/logger';
 
 export interface JwtPayload {
   sub: string; // user_id
@@ -16,12 +17,17 @@ export interface JwtPayload {
 
 @Injectable()
 export class AppJwtService {
+  private readonly context = AppJwtService.name;
+
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    @Inject(APP_LOGGER)
+    private readonly logger: AppLogger,
   ) {}
 
   async generateAccessToken(user: User, domainSlug?: string): Promise<string> {
+    this.logger.debug('generateAccessToken started', this.context, user?.domain_id);
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
@@ -40,6 +46,7 @@ export class AppJwtService {
   }
 
   async generateRefreshToken(user: User, domainSlug?: string): Promise<string> {
+    this.logger.debug('generateRefreshToken started', this.context, user?.domain_id);
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
@@ -58,9 +65,11 @@ export class AppJwtService {
   }
 
   async verifyToken(token: string): Promise<JwtPayload> {
+    this.logger.debug('verifyToken started', this.context);
     try {
       return await this.jwtService.verifyAsync<JwtPayload>(token);
     } catch (error) {
+      this.logger.warn('verifyToken failed: token invalid or expired', this.context);
       throw new UnauthorizedException('Token invalid or expired');
     }
   }

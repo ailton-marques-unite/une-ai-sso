@@ -17,6 +17,7 @@ import { User } from '../../../domain/entities/user.entity';
 import { Domain } from '../../../../domains/domain/entities/domain.entity';
 import { SmsService } from '../../../../shared/services/sms.service';
 import { EmailService } from '../../../../shared/services/email.service';
+import { AppLogger, APP_LOGGER } from '../../../../shared/utils/logger';
 
 export interface MfaSetupResponse {
   secret: string;
@@ -26,6 +27,7 @@ export interface MfaSetupResponse {
 
 @Injectable()
 export class MfaService {
+  private readonly context = MfaService.name;
   private readonly encryptionKey: Buffer;
   private readonly issuer: string;
 
@@ -40,6 +42,8 @@ export class MfaService {
     private readonly configService: ConfigService,
     private readonly smsService: SmsService,
     private readonly emailService: EmailService,
+    @Inject(APP_LOGGER)
+    private readonly logger: AppLogger,
   ) {
     const key = this.configService.get<string>('MFA_ENCRYPTION_KEY');
     if (!key || key.length !== 64) {
@@ -54,6 +58,7 @@ export class MfaService {
     userId: string,
     mfaType: MfaType = MfaType.TOTP,
   ): Promise<MfaSetupResponse> {
+    this.logger.log('setupMfa started', this.context, domainId);
     // Verificar se usuário existe e pertence ao domínio
     const user = await this.userRepository.findOne({
       where: { id: userId, domain_id: domainId },
@@ -64,9 +69,12 @@ export class MfaService {
     }
 
     if (mfaType === MfaType.TOTP) {
-      return this.setupTotp(domainId, userId, user.email);
+      const result = await this.setupTotp(domainId, userId, user.email);
+      this.logger.log('setupMfa completed', this.context, domainId);
+      return result;
     }
 
+    this.logger.warn('setupMfa: MFA type not supported', this.context, domainId);
     throw new BadRequestException(`MFA type not supported: ${mfaType}`);
   }
 
@@ -116,6 +124,7 @@ export class MfaService {
     code: string,
     mfaType: MfaType = MfaType.TOTP,
   ): Promise<boolean> {
+    this.logger.debug('verifyMfa started', this.context, domainId);
     const user = await this.userRepository.findOne({
       where: { id: userId, domain_id: domainId },
     });
@@ -185,6 +194,7 @@ export class MfaService {
     userId: string,
     mfaType: MfaType,
   ): Promise<{ code: string; expiresIn: number }> {
+    this.logger.log('sendMfaCode started', this.context, domainId);
     const user = await this.userRepository.findOne({
       where: { id: userId, domain_id: domainId },
     });
@@ -212,6 +222,7 @@ export class MfaService {
       );
     }
 
+    this.logger.warn('sendMfaCode: MFA type does not support sending code', this.context, domainId);
     throw new BadRequestException(`MFA type does not support sending code: ${mfaType}`);
   }
 
@@ -221,6 +232,7 @@ export class MfaService {
     verificationCode: string,
     mfaType: MfaType = MfaType.TOTP,
   ): Promise<void> {
+    this.logger.log('enableMfa started', this.context, domainId);
     const user = await this.userRepository.findOne({
       where: { id: userId, domain_id: domainId },
     });
@@ -255,9 +267,11 @@ export class MfaService {
 
     // Atualizar flag no usuário
     await this.userRepository.update({ id: userId }, { mfa_enabled: true });
+    this.logger.log('enableMfa completed', this.context, domainId);
   }
 
   async disableMfa(domainId: string, userId: string): Promise<void> {
+    this.logger.log('disableMfa started', this.context, domainId);
     const user = await this.userRepository.findOne({
       where: { id: userId, domain_id: domainId },
     });
@@ -271,12 +285,14 @@ export class MfaService {
 
     // Atualizar flag no usuário
     await this.userRepository.update({ id: userId }, { mfa_enabled: false });
+    this.logger.log('disableMfa completed', this.context, domainId);
   }
 
   async generateBackupCodes(
     domainId: string,
     userId: string,
   ): Promise<string[]> {
+    this.logger.log('generateBackupCodes started', this.context, domainId);
     const user = await this.userRepository.findOne({
       where: { id: userId, domain_id: domainId },
     });
@@ -299,6 +315,7 @@ export class MfaService {
     userMfa.backup_codes = encryptedBackupCodes;
     await this.userMfaRepository.save(userMfa);
 
+    this.logger.log('generateBackupCodes completed', this.context, domainId);
     return backupCodes;
   }
 

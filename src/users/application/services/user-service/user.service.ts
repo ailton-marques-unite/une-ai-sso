@@ -10,19 +10,25 @@ import { CreateUserDto } from '../../dtos/create-user.dto';
 import { UserResponseDto } from '../../dtos/user-response.dto';
 import { PasswordService } from '../../../../shared/services/password.service';
 import { User } from '../../../domain/entities/user.entity';
+import { AppLogger, APP_LOGGER } from '../../../../shared/utils/logger';
 
 @Injectable()
 export class UserService {
+  private readonly context = UserService.name;
+
   constructor(
     @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
     private readonly passwordService: PasswordService,
+    @Inject(APP_LOGGER)
+    private readonly logger: AppLogger,
   ) {}
 
   async create(
     domainId: string,
     createUserDto: CreateUserDto,
   ): Promise<UserResponseDto> {
+    this.logger.log('create started', this.context, domainId);
     // Validar força da senha
     const passwordValidation = this.passwordService.validatePasswordStrength(
       createUserDto.password,
@@ -54,23 +60,27 @@ export class UserService {
       password_hash: passwordHash,
     });
 
-    // Retornar DTO sem senha
+    this.logger.log('create completed', this.context, domainId);
     return this.toResponseDto(user);
   }
 
   async findById(domainId: string, id: string): Promise<UserResponseDto> {
+    this.logger.debug('findById started', this.context, domainId);
     const user = await this.userRepository.findById(domainId, id);
     if (!user) {
+      this.logger.warn('findById: user not found', this.context, domainId);
       throw new NotFoundException('User not found');
     }
     return this.toResponseDto(user);
   }
 
   async findByEmail(domainId: string, email: string): Promise<User | null> {
+    this.logger.debug('findByEmail started', this.context, domainId);
     return this.userRepository.findByEmail(domainId, email);
   }
 
   async updateLastLogin(domainId: string, userId: string): Promise<void> {
+    this.logger.debug('updateLastLogin started', this.context, domainId);
     await this.userRepository.updateLastLogin(domainId, userId);
   }
 

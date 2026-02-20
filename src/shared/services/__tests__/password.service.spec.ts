@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { PasswordService } from '../password.service';
+import { APP_LOGGER } from '../../utils/logger';
 import * as bcrypt from 'bcrypt';
 
 // Mock bcrypt
@@ -50,6 +51,10 @@ describe('PasswordService', () => {
             }),
           },
         },
+        {
+          provide: APP_LOGGER,
+          useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
+        },
       ],
     }).compile();
 
@@ -84,6 +89,10 @@ describe('PasswordService', () => {
                 return defaultValue;
               }),
             },
+          },
+          {
+            provide: APP_LOGGER,
+            useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
           },
         ],
       }).compile();
