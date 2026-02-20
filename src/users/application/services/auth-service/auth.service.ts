@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   BadRequestException,
   NotFoundException,
+  Inject,
 } from '@nestjs/common';
 import { UserService } from '../user-service/user.service';
 import { PasswordService } from '../../../../shared/services/password.service';
@@ -17,9 +18,12 @@ import { Repository } from 'typeorm';
 import { Domain } from '../../../../domains/domain/entities/domain.entity';
 import { MfaService } from '../mfa-service/mfa.service';
 import { MfaType } from '../../../domain/entities/user-mfa.entity';
+import { AppLogger, APP_LOGGER } from '../../../../shared/utils/logger';
 
 @Injectable()
 export class AuthService {
+  private readonly context = AuthService.name;
+
   constructor(
     private readonly userService: UserService,
     private readonly passwordService: PasswordService,
@@ -28,26 +32,33 @@ export class AuthService {
     private readonly mfaService: MfaService,
     @InjectRepository(Domain)
     private readonly domainRepository: Repository<Domain>,
+    @Inject(APP_LOGGER)
+    private readonly logger: AppLogger,
   ) {}
 
   async register(
     domainId: string,
     createUserDto: CreateUserDto,
   ): Promise<UserResponseDto> {
+    this.logger.log('register started', this.context, domainId);
     // Verificar se domínio existe e está ativo
     const domain = await this.domainRepository.findOne({
       where: { id: domainId, is_active: true },
     });
 
     if (!domain) {
+      this.logger.warn('register failed: domain not found or inactive', this.context, domainId);
       throw new NotFoundException('Domain not found or inactive');
     }
 
-    return this.userService.create(domainId, createUserDto);
+    const result = await this.userService.create(domainId, createUserDto);
+    this.logger.log('register completed', this.context, domainId);
+    return result;
   }
 
   async login(loginDto: LoginDto): Promise<LoginResponseDto> {
     const { domain_id, email, password } = loginDto;
+    this.logger.log('login started', this.context, domain_id);
 
     // Verificar se domínio existe e está ativo
     const domain = await this.domainRepository.findOne({
@@ -130,6 +141,7 @@ export class AuthService {
       refreshToken,
     );
 
+    this.logger.log('login completed', this.context, domain_id);
     return {
       access_token: accessToken,
       refresh_token: refreshToken,
@@ -143,6 +155,7 @@ export class AuthService {
     domainId: string,
     refreshToken: string,
   ): Promise<LoginResponseDto> {
+    this.logger.log('refreshToken started', this.context, domainId);
     // Verificar token
     const payload = await this.jwtService.verifyToken(refreshToken);
 
@@ -195,6 +208,7 @@ export class AuthService {
       newRefreshToken,
     );
 
+    this.logger.log('refreshToken completed', this.context, domainId);
     return {
       access_token: newAccessToken,
       refresh_token: newRefreshToken,
@@ -204,6 +218,7 @@ export class AuthService {
   }
 
   async logout(domainId: string, userId: string, refreshToken?: string): Promise<void> {
+    this.logger.log('logout started', this.context, domainId);
     if (refreshToken) {
       await this.refreshTokenService.revokeRefreshToken(
         domainId,
@@ -214,6 +229,7 @@ export class AuthService {
       // Revogar todos os tokens do usuário
       await this.refreshTokenService.revokeAllUserTokens(domainId, userId);
     }
+    this.logger.log('logout completed', this.context, domainId);
   }
 
   async verifyMfaChallenge(
@@ -221,6 +237,7 @@ export class AuthService {
     code: string,
     mfaType: MfaType = MfaType.TOTP,
   ): Promise<LoginResponseDto> {
+    this.logger.log('verifyMfaChallenge started', this.context);
     // Validar token temporário
     const payload = await this.jwtService.verifyToken(mfaToken);
     const domainId = payload.domain_id;
@@ -274,6 +291,7 @@ export class AuthService {
       refreshToken,
     );
 
+    this.logger.log('verifyMfaChallenge completed', this.context, domainId);
     return {
       access_token: accessToken,
       refresh_token: refreshToken,

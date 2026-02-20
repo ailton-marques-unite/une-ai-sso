@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { BadRequestException } from '@nestjs/common';
 import { Redis } from 'ioredis';
 import { SmsService } from '../sms.service';
+import { APP_LOGGER } from '../../utils/logger';
 import twilio from 'twilio';
 
 // Mock twilio module
@@ -71,6 +72,10 @@ describe('SmsService', () => {
         {
           provide: 'REDIS_CLIENT',
           useValue: redisClient,
+        },
+        {
+          provide: APP_LOGGER,
+          useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
         },
       ],
     }).compile();
@@ -143,6 +148,10 @@ describe('SmsService', () => {
             provide: 'REDIS_CLIENT',
             useValue: redisClient,
           },
+          {
+            provide: APP_LOGGER,
+            useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
+          },
         ],
       }).compile();
 
@@ -182,6 +191,10 @@ describe('SmsService', () => {
           {
             provide: 'REDIS_CLIENT',
             useValue: redisClient,
+          },
+          {
+            provide: APP_LOGGER,
+            useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
           },
         ],
       }).compile();
@@ -224,6 +237,10 @@ describe('SmsService', () => {
             provide: 'REDIS_CLIENT',
             useValue: redisClient,
           },
+          {
+            provide: APP_LOGGER,
+            useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
+          },
         ],
       }).compile();
 
@@ -264,6 +281,10 @@ describe('SmsService', () => {
             provide: 'REDIS_CLIENT',
             useValue: redisClient,
           },
+          {
+            provide: APP_LOGGER,
+            useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
+          },
         ],
       }).compile();
 
@@ -279,8 +300,8 @@ describe('SmsService', () => {
     });
 
     it('should log warning when error occurs during Twilio initialization', async () => {
-      // Arrange
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+      // Arrange - SmsService uses AppLogger.warn when Twilio init fails
+      const mockLogger = { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() };
       mockTwilio.mockImplementationOnce(() => {
         throw new Error('Twilio initialization error');
       });
@@ -305,22 +326,25 @@ describe('SmsService', () => {
             provide: 'REDIS_CLIENT',
             useValue: redisClient,
           },
+          {
+            provide: APP_LOGGER,
+            useValue: mockLogger,
+          },
         ],
       }).compile();
 
       const testService = module.get<SmsService>(SmsService);
 
-      // Assert
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
+      // Assert - service logs via AppLogger.warn when Twilio fails to initialize
+      expect(mockLogger.warn).toHaveBeenCalledWith(
         'Twilio não configurado corretamente. SMS MFA não estará disponível.',
+        expect.any(String),
       );
 
       // Act & Assert - serviço não deve estar configurado
       await expect(
         testService.sendMfaCode(mockDomainId, mockUserId, mockPhoneNumber),
       ).rejects.toThrow(BadRequestException);
-
-      consoleWarnSpy.mockRestore();
     });
 
     it('should not initialize Twilio client when phoneNumber is empty string', async () => {
@@ -348,6 +372,10 @@ describe('SmsService', () => {
           {
             provide: 'REDIS_CLIENT',
             useValue: redisClient,
+          },
+          {
+            provide: APP_LOGGER,
+            useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
           },
         ],
       }).compile();
@@ -602,6 +630,10 @@ describe('SmsService', () => {
           {
             provide: 'REDIS_CLIENT',
             useValue: redisClient,
+          },
+          {
+            provide: APP_LOGGER,
+            useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
           },
         ],
       }).compile();

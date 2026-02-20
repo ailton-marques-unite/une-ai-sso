@@ -13,6 +13,7 @@ import { User } from '../../../domain/entities/user.entity';
 import { Domain } from '../../../../domains/domain/entities/domain.entity';
 import { SmsService } from '../../../../shared/services/sms.service';
 import { EmailService } from '../../../../shared/services/email.service';
+import { APP_LOGGER } from '../../../../shared/utils/logger';
 
 // Mock external libraries
 const mockGenerateSecret = jest.fn();
@@ -168,6 +169,10 @@ describe('MfaService', () => {
             sendMfaCode: jest.fn(),
             verifyMfaCode: jest.fn(),
           },
+        },
+        {
+          provide: APP_LOGGER,
+          useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
         },
       ],
     }).compile();

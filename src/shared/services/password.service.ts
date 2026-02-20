@@ -1,12 +1,18 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
+import { AppLogger, APP_LOGGER } from '../utils/logger';
 
 @Injectable()
 export class PasswordService {
+  private readonly context = PasswordService.name;
   private readonly saltRounds: number;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    @Inject(APP_LOGGER)
+    private readonly logger: AppLogger,
+  ) {
     this.saltRounds = parseInt(
       this.configService.get<string>('BCRYPT_ROUNDS', '10'),
       10,
@@ -14,6 +20,7 @@ export class PasswordService {
   }
 
   async hashPassword(password: string): Promise<string> {
+    this.logger.debug('hashPassword started', this.context);
     return bcrypt.hash(password, this.saltRounds);
   }
 
@@ -21,6 +28,7 @@ export class PasswordService {
     password: string,
     hashedPassword: string,
   ): Promise<boolean> {
+    this.logger.debug('comparePassword started', this.context);
     return bcrypt.compare(password, hashedPassword);
   }
 

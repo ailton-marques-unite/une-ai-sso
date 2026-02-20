@@ -2,6 +2,7 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
@@ -10,20 +11,26 @@ import { Domain } from '../../../domain/entities/domain.entity';
 import { CreateDomainRoleDto } from '../../dtos/create-domain-role.dto';
 import { UpdateDomainRoleDto } from '../../dtos/update-domain-role.dto';
 import { ListDomainRolesQueryDto } from '../../dtos/list-domain-roles-query.dto';
+import { AppLogger, APP_LOGGER } from '../../../../shared/utils/logger';
 
 @Injectable()
 export class DomainRoleService {
+  private readonly context = DomainRoleService.name;
+
   constructor(
     @InjectRepository(DomainRole)
     private readonly domainRoleRepository: Repository<DomainRole>,
     @InjectRepository(Domain)
     private readonly domainRepository: Repository<Domain>,
+    @Inject(APP_LOGGER)
+    private readonly logger: AppLogger,
   ) {}
 
   async createDomainRole(
     domainId: string,
     createDomainRoleDto: CreateDomainRoleDto,
   ): Promise<DomainRole> {
+    this.logger.log('createDomainRole started', this.context, domainId);
     const domain = await this.domainRepository.findOne({
       where: { id: domainId },
     });
@@ -52,7 +59,9 @@ export class DomainRoleService {
       permissions: createDomainRoleDto.permissions,
     });
 
-    return this.domainRoleRepository.save(domainRole);
+    const saved = await this.domainRoleRepository.save(domainRole);
+    this.logger.log('createDomainRole completed', this.context, domainId);
+    return saved;
   }
 
   async listDomainRoles(
@@ -64,6 +73,7 @@ export class DomainRoleService {
     page: number;
     limit: number;
   }> {
+    this.logger.log('listDomainRoles started', this.context, domainId);
     const { page = 1, limit = 10, search } = query;
     const skip = (page - 1) * limit;
 
@@ -82,6 +92,7 @@ export class DomainRoleService {
       order: { created_at: 'DESC' },
     });
 
+    this.logger.log('listDomainRoles completed', this.context, domainId);
     return {
       data,
       total,
@@ -94,6 +105,7 @@ export class DomainRoleService {
     domainId: string,
     roleId: string,
   ): Promise<DomainRole> {
+    this.logger.debug('getDomainRoleById started', this.context, domainId);
     const role = await this.domainRoleRepository.findOne({
       where: { id: roleId, domain_id: domainId },
     });
@@ -110,6 +122,7 @@ export class DomainRoleService {
     roleId: string,
     updateDomainRoleDto: UpdateDomainRoleDto,
   ): Promise<DomainRole> {
+    this.logger.log('updateDomainRole started', this.context, domainId);
     const role = await this.domainRoleRepository.findOne({
       where: { id: roleId, domain_id: domainId },
     });
@@ -137,10 +150,13 @@ export class DomainRoleService {
     }
 
     Object.assign(role, updateDomainRoleDto);
-    return this.domainRoleRepository.save(role);
+    const saved = await this.domainRoleRepository.save(role);
+    this.logger.log('updateDomainRole completed', this.context, domainId);
+    return saved;
   }
 
   async deleteDomainRole(domainId: string, roleId: string): Promise<void> {
+    this.logger.log('deleteDomainRole started', this.context, domainId);
     const role = await this.domainRoleRepository.findOne({
       where: { id: roleId, domain_id: domainId },
     });
@@ -150,6 +166,7 @@ export class DomainRoleService {
     }
 
     await this.domainRoleRepository.remove(role);
+    this.logger.log('deleteDomainRole completed', this.context, domainId);
   }
 }
 

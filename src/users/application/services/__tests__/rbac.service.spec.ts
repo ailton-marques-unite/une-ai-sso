@@ -9,6 +9,7 @@ import { UserRoleService } from '../user-role-service/user-role.service';
 import { User } from '../../../domain/entities/user.entity';
 import { UserRole } from '../../../domain/entities/user-role.entity';
 import { DomainRole } from '../../../../domains/domain/entities/domain-role.entity';
+import { APP_LOGGER } from '../../../../shared/utils/logger';
 
 describe('RbacService', () => {
   let service: RbacService;
@@ -70,6 +71,10 @@ describe('RbacService', () => {
             assignRoleToUser: jest.fn(),
             removeRoleFromUser: jest.fn(),
           },
+        },
+        {
+          provide: APP_LOGGER,
+          useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
         },
       ],
     }).compile();

@@ -8,6 +8,7 @@ import { User } from '../../../domain/entities/user.entity';
 import { DomainRole } from '../../../../domains/domain/entities/domain-role.entity';
 import { AssignUserRoleDto } from '../../dtos/assign-user-role.dto';
 import { ListUserRolesQueryDto } from '../../dtos/list-user-roles-query.dto';
+import { APP_LOGGER } from '../../../../shared/utils/logger';
 
 describe('UserRoleService', () => {
   let service: UserRoleService;
@@ -71,6 +72,10 @@ describe('UserRoleService', () => {
           useValue: {
             findOne: jest.fn(),
           },
+        },
+        {
+          provide: APP_LOGGER,
+          useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
         },
       ],
     }).compile();

@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
 import { UserRoleService } from '../user-role-service/user-role.service';
+import { AppLogger, APP_LOGGER } from '../../../../shared/utils/logger';
 
 export interface UserRolesAndPermissions {
   roles: string[];
@@ -14,16 +15,21 @@ export interface UserRolesAndPermissions {
 
 @Injectable()
 export class RbacService {
+  private readonly context = RbacService.name;
+
   constructor(
     @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
     private readonly userRoleService: UserRoleService,
+    @Inject(APP_LOGGER)
+    private readonly logger: AppLogger,
   ) {}
 
   async getUserRolesAndPermissions(
     domainId: string,
     userId: string,
   ): Promise<UserRolesAndPermissions> {
+    this.logger.log('getUserRolesAndPermissions started', this.context, domainId);
     const user = await this.userRepository.findById(domainId, userId);
 
     if (!user) {
@@ -46,6 +52,7 @@ export class RbacService {
       }
     }
 
+    this.logger.log('getUserRolesAndPermissions completed', this.context, domainId);
     return {
       roles,
       permissions: Array.from(permissionsSet),
@@ -57,9 +64,11 @@ export class RbacService {
     userId: string,
     roleId: string,
   ): Promise<void> {
+    this.logger.log('assignRoleToUser started', this.context, domainId);
     await this.userRoleService.assignRoleToUser(domainId, userId, {
       domainRoleId: roleId,
     });
+    this.logger.log('assignRoleToUser completed', this.context, domainId);
   }
 
   async removeRoleFromUser(
@@ -67,7 +76,9 @@ export class RbacService {
     userId: string,
     roleId: string,
   ): Promise<void> {
+    this.logger.log('removeRoleFromUser started', this.context, domainId);
     await this.userRoleService.removeRoleFromUser(domainId, userId, roleId);
+    this.logger.log('removeRoleFromUser completed', this.context, domainId);
   }
 
   async hasPermission(
@@ -75,6 +86,7 @@ export class RbacService {
     userId: string,
     permission: string,
   ): Promise<boolean> {
+    this.logger.debug('hasPermission started', this.context, domainId);
     const { permissions } = await this.getUserRolesAndPermissions(
       domainId,
       userId,
@@ -87,6 +99,7 @@ export class RbacService {
     userId: string,
     role: string,
   ): Promise<boolean> {
+    this.logger.debug('hasRole started', this.context, domainId);
     const { roles } = await this.getUserRolesAndPermissions(domainId, userId);
     return roles.includes(role);
   }

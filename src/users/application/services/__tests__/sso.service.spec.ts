@@ -14,6 +14,7 @@ import { AppJwtService } from '../../../../shared/services/jwt.service';
 import { RefreshTokenService } from '../../../../shared/services/refresh-token.service';
 import { Domain } from '../../../../domains/domain/entities/domain.entity';
 import { User } from '../../../domain/entities/user.entity';
+import { APP_LOGGER } from '../../../../shared/utils/logger';
 
 // Mock axios
 jest.mock('axios');
@@ -159,6 +160,10 @@ describe('SsoService', () => {
           provide: 'REDIS_CLIENT',
           useValue: redisClient,
         },
+        {
+          provide: APP_LOGGER,
+          useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
+        },
       ],
     }).compile();
 
@@ -290,6 +295,10 @@ describe('SsoService', () => {
           {
             provide: 'REDIS_CLIENT',
             useValue: redisClient,
+          },
+          {
+            provide: APP_LOGGER,
+            useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
           },
         ],
       }).compile();
@@ -759,6 +768,10 @@ describe('SsoService', () => {
             provide: 'REDIS_CLIENT',
             useValue: redisClient,
           },
+          {
+            provide: APP_LOGGER,
+            useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
+          },
         ],
       }).compile();
 
@@ -831,6 +844,10 @@ describe('SsoService', () => {
           {
             provide: 'REDIS_CLIENT',
             useValue: redisClient,
+          },
+          {
+            provide: APP_LOGGER,
+            useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
           },
         ],
       }).compile();

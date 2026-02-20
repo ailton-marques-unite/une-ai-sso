@@ -1,17 +1,20 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Inject } from '@nestjs/common';
 import { Redis } from 'ioredis';
 import twilio from 'twilio';
+import { AppLogger, APP_LOGGER } from '../utils/logger';
 
 @Injectable()
 export class SmsService {
+  private readonly context = SmsService.name;
   private readonly twilioClient: twilio.Twilio | null = null;
   private readonly twilioPhoneNumber: string;
 
   constructor(
     private readonly configService: ConfigService,
     @Inject('REDIS_CLIENT') private readonly redisClient: Redis,
+    @Inject(APP_LOGGER)
+    private readonly logger: AppLogger,
   ) {
     const accountSid = this.configService.get<string>('TWILIO_ACCOUNT_SID');
     const authToken = this.configService.get<string>('TWILIO_AUTH_TOKEN');
@@ -23,7 +26,7 @@ export class SmsService {
       try {
         this.twilioClient = twilio(accountSid, authToken);
       } catch (error) {
-        console.warn('Twilio não configurado corretamente. SMS MFA não estará disponível.');
+        this.logger.warn('Twilio não configurado corretamente. SMS MFA não estará disponível.', this.context);
       }
     }
   }
@@ -33,6 +36,7 @@ export class SmsService {
     userId: string,
     phoneNumber: string,
   ): Promise<{ code: string; expiresIn: number }> {
+    this.logger.log('sendMfaCode started', this.context, domainId);
     if (!this.twilioClient) {
       throw new BadRequestException('SMS service not configured');
     }
@@ -53,9 +57,11 @@ export class SmsService {
         to: phoneNumber,
       });
     } catch (error) {
-      throw new BadRequestException('Erro ao enviar SMS: ' + error.message);
+      this.logger.error('sendMfaCode failed', (error as Error)?.stack, this.context, domainId);
+      throw new BadRequestException('Erro ao enviar SMS: ' + (error as Error).message);
     }
 
+    this.logger.log('sendMfaCode completed', this.context, domainId);
     return { code, expiresIn };
   }
 
@@ -64,6 +70,7 @@ export class SmsService {
     userId: string,
     code: string,
   ): Promise<boolean> {
+    this.logger.debug('verifyMfaCode started', this.context, domainId);
     const redisKey = `mfa_sms:${domainId}:${userId}:${code}`;
     const stored = await this.redisClient.get(redisKey);
 

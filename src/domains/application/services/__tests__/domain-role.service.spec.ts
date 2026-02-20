@@ -8,6 +8,7 @@ import { Domain } from '../../../domain/entities/domain.entity';
 import { CreateDomainRoleDto } from '../../dtos/create-domain-role.dto';
 import { UpdateDomainRoleDto } from '../../dtos/update-domain-role.dto';
 import { ListDomainRolesQueryDto } from '../../dtos/list-domain-roles-query.dto';
+import { APP_LOGGER } from '../../../../shared/utils/logger';
 
 describe('DomainRoleService', () => {
   let service: DomainRoleService;
@@ -69,6 +70,10 @@ describe('DomainRoleService', () => {
           useValue: {
             findOne: jest.fn(),
           },
+        },
+        {
+          provide: APP_LOGGER,
+          useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
         },
       ],
     }).compile();

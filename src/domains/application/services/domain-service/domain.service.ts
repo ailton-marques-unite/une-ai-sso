@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { Domain } from '../../../domain/entities/domain.entity';
@@ -6,15 +6,21 @@ import { CreateDomainDto } from '../../dtos/create-domain.dto';
 import { UpdateDomainDto } from '../../dtos/update-domain.dto';
 import { ListDomainsQueryDto } from '../../dtos/list-domains-query.dto';
 import { IDomainService } from '../../../domain/repositories/domain.service.interface';
+import { AppLogger, APP_LOGGER } from '../../../../shared/utils/logger';
 
 @Injectable()
 export class DomainService implements IDomainService {
+  private readonly context = DomainService.name;
+
   constructor(
     @InjectRepository(Domain)
     private readonly domainRepository: Repository<Domain>,
+    @Inject(APP_LOGGER)
+    private readonly logger: AppLogger,
   ) {}
 
   async create(createDomainDto: CreateDomainDto, createdBy: string): Promise<Domain> {
+    this.logger.log('create started', this.context);
     // Verificar se o slug já existe
     const existingDomain = await this.domainRepository.findOne({
       where: { slug: createDomainDto.slug },
@@ -29,7 +35,9 @@ export class DomainService implements IDomainService {
       created_by: createdBy,
     });
 
-    return this.domainRepository.save(domain);
+    const saved = await this.domainRepository.save(domain);
+    this.logger.log('create completed', this.context);
+    return saved;
   }
 
   async findAll(query: ListDomainsQueryDto): Promise<{
@@ -38,6 +46,7 @@ export class DomainService implements IDomainService {
     page: number;
     limit: number;
   }> {
+    this.logger.debug('findAll started', this.context);
     const { page = 1, limit = 10, is_active, search } = query;
     const skip = (page - 1) * limit;
 
@@ -67,6 +76,7 @@ export class DomainService implements IDomainService {
   }
 
   async findOne(id: string): Promise<Domain | null> {
+    this.logger.debug('findOne started', this.context, id);
     return this.domainRepository.findOne({
       where: { id },
     });
@@ -79,6 +89,7 @@ export class DomainService implements IDomainService {
   }
 
   async update(id: string, updateDomainDto: UpdateDomainDto): Promise<Domain | null> {
+    this.logger.log('update started', this.context, id);
     const domain = await this.findOne(id);
 
     if (!domain) {
@@ -94,10 +105,13 @@ export class DomainService implements IDomainService {
     }
 
     Object.assign(domain, updateDomainDto);
-    return this.domainRepository.save(domain);
+    const saved = await this.domainRepository.save(domain);
+    this.logger.log('update completed', this.context, id);
+    return saved;
   }
 
   async remove(id: string): Promise<boolean> {
+    this.logger.log('remove started', this.context, id);
     const domain = await this.findOne(id);
 
     if (!domain) {
@@ -106,10 +120,12 @@ export class DomainService implements IDomainService {
 
     domain.is_active = false;
     await this.domainRepository.save(domain);
+    this.logger.log('remove completed', this.context, id);
     return true;
   }
 
   async activate(id: string): Promise<boolean> {
+    this.logger.log('activate started', this.context, id);
     const domain = await this.findOne(id);
 
     if (!domain) {
@@ -118,6 +134,7 @@ export class DomainService implements IDomainService {
 
     domain.is_active = true;
     await this.domainRepository.save(domain);
+    this.logger.log('activate completed', this.context, id);
     return true;
   }
 }

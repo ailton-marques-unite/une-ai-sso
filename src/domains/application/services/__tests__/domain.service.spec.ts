@@ -7,6 +7,7 @@ import { Domain } from '../../../domain/entities/domain.entity';
 import { CreateDomainDto } from '../../dtos/create-domain.dto';
 import { UpdateDomainDto } from '../../dtos/update-domain.dto';
 import { ListDomainsQueryDto } from '../../dtos/list-domains-query.dto';
+import { APP_LOGGER } from '../../../../shared/utils/logger';
 
 describe('DomainService', () => {
   let service: DomainService;
@@ -64,6 +65,10 @@ describe('DomainService', () => {
             save: jest.fn(),
             findAndCount: jest.fn(),
           },
+        },
+        {
+          provide: APP_LOGGER,
+          useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
         },
       ],
     }).compile();

@@ -1,11 +1,12 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Inject } from '@nestjs/common';
 import { Redis } from 'ioredis';
 import sgMail from '@sendgrid/mail';
+import { AppLogger, APP_LOGGER } from '../utils/logger';
 
 @Injectable()
 export class EmailService {
+  private readonly context = EmailService.name;
   private readonly fromEmail: string;
   private readonly fromName: string;
   private readonly isConfigured: boolean;
@@ -13,6 +14,8 @@ export class EmailService {
   constructor(
     private readonly configService: ConfigService,
     @Inject('REDIS_CLIENT') private readonly redisClient: Redis,
+    @Inject(APP_LOGGER)
+    private readonly logger: AppLogger,
   ) {
     const apiKey = this.configService.get<string>('SENDGRID_API_KEY');
     this.fromEmail =
@@ -34,6 +37,7 @@ export class EmailService {
     email: string,
     domainName?: string,
   ): Promise<{ code: string; expiresIn: number }> {
+    this.logger.log('sendMfaCode started', this.context, domainId);
     if (!this.isConfigured) {
       throw new BadRequestException('Email service not configured');
     }
@@ -71,9 +75,11 @@ export class EmailService {
     try {
       await sgMail.send(msg);
     } catch (error) {
-      throw new BadRequestException('Erro ao enviar email: ' + error.message);
+      this.logger.error('sendMfaCode failed', (error as Error)?.stack, this.context, domainId);
+      throw new BadRequestException('Erro ao enviar email: ' + (error as Error).message);
     }
 
+    this.logger.log('sendMfaCode completed', this.context, domainId);
     return { code, expiresIn };
   }
 
@@ -82,6 +88,7 @@ export class EmailService {
     userId: string,
     code: string,
   ): Promise<boolean> {
+    this.logger.debug('verifyMfaCode started', this.context, domainId);
     const redisKey = `mfa_email:${domainId}:${userId}:${code}`;
     const stored = await this.redisClient.get(redisKey);
 
@@ -99,9 +106,9 @@ export class EmailService {
     resetToken: string,
     domainName?: string,
   ): Promise<void> {
+    this.logger.log('sendPasswordResetEmail started', this.context);
     if (!this.isConfigured) {
-      // Em desenvolvimento, apenas logar
-      console.log(`Password reset token for ${email}: ${resetToken}`);
+      this.logger.debug('sendPasswordResetEmail: email not configured, skipping send', this.context);
       return;
     }
 
@@ -131,7 +138,9 @@ export class EmailService {
     try {
       await sgMail.send(msg);
     } catch (error) {
-      throw new BadRequestException('Erro ao enviar email: ' + error.message);
+      this.logger.error('sendPasswordResetEmail failed', (error as Error)?.stack, this.context);
+      throw new BadRequestException('Erro ao enviar email: ' + (error as Error).message);
     }
+    this.logger.log('sendPasswordResetEmail completed', this.context);
   }
 }

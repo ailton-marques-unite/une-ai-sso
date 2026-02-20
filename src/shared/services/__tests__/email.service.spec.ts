@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { BadRequestException } from '@nestjs/common';
 import { Redis } from 'ioredis';
 import { EmailService } from '../email.service';
+import { APP_LOGGER } from '../../utils/logger';
 import sgMail from '@sendgrid/mail';
 
 // Mock @sendgrid/mail
@@ -69,6 +70,10 @@ describe('EmailService', () => {
           provide: 'REDIS_CLIENT',
           useValue: redisClient,
         },
+        {
+          provide: APP_LOGGER,
+          useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
+        },
       ],
     }).compile();
 
@@ -105,6 +110,10 @@ describe('EmailService', () => {
           {
             provide: 'REDIS_CLIENT',
             useValue: redisClient,
+          },
+          {
+            provide: APP_LOGGER,
+            useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
           },
         ],
       }).compile();
@@ -144,6 +153,10 @@ describe('EmailService', () => {
           {
             provide: 'REDIS_CLIENT',
             useValue: redisClient,
+          },
+          {
+            provide: APP_LOGGER,
+            useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
           },
         ],
       }).compile();
@@ -187,6 +200,10 @@ describe('EmailService', () => {
           {
             provide: 'REDIS_CLIENT',
             useValue: redisClient,
+          },
+          {
+            provide: APP_LOGGER,
+            useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
           },
         ],
       }).compile();
@@ -376,6 +393,10 @@ describe('EmailService', () => {
             provide: 'REDIS_CLIENT',
             useValue: redisClient,
           },
+          {
+            provide: APP_LOGGER,
+            useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
+          },
         ],
       }).compile();
 
@@ -406,6 +427,10 @@ describe('EmailService', () => {
           {
             provide: 'REDIS_CLIENT',
             useValue: redisClient,
+          },
+          {
+            provide: APP_LOGGER,
+            useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
           },
         ],
       }).compile();
@@ -544,6 +569,10 @@ describe('EmailService', () => {
             provide: 'REDIS_CLIENT',
             useValue: redisClient,
           },
+          {
+            provide: APP_LOGGER,
+            useValue: { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() },
+          },
         ],
       }).compile();
 
@@ -649,8 +678,9 @@ describe('EmailService', () => {
       ).resolves.not.toThrow();
     });
 
-    it('should use console.log when service is not configured (development)', async () => {
+    it('should log with logger when service is not configured (development)', async () => {
       // Arrange
+      const mockLogger = { log: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() };
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           EmailService,
@@ -669,18 +699,22 @@ describe('EmailService', () => {
             provide: 'REDIS_CLIENT',
             useValue: redisClient,
           },
+          {
+            provide: APP_LOGGER,
+            useValue: mockLogger,
+          },
         ],
       }).compile();
 
       const unconfiguredService = module.get<EmailService>(EmailService);
-      const consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
 
       // Act
       await unconfiguredService.sendPasswordResetEmail(mockEmail, mockResetToken);
 
-      // Assert
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        `Password reset token for ${mockEmail}: ${mockResetToken}`,
+      // Assert - when not configured we log with logger.debug and skip sending
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'sendPasswordResetEmail: email not configured, skipping send',
+        expect.any(String),
       );
       expect(mockSgMail.send).not.toHaveBeenCalled();
     });

@@ -2,6 +2,7 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -10,9 +11,12 @@ import { User } from '../../../domain/entities/user.entity';
 import { DomainRole } from '../../../../domains/domain/entities/domain-role.entity';
 import { AssignUserRoleDto } from '../../dtos/assign-user-role.dto';
 import { ListUserRolesQueryDto } from '../../dtos/list-user-roles-query.dto';
+import { AppLogger, APP_LOGGER } from '../../../../shared/utils/logger';
 
 @Injectable()
 export class UserRoleService {
+  private readonly context = UserRoleService.name;
+
   constructor(
     @InjectRepository(UserRole)
     private readonly userRoleRepository: Repository<UserRole>,
@@ -20,6 +24,8 @@ export class UserRoleService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(DomainRole)
     private readonly domainRoleRepository: Repository<DomainRole>,
+    @Inject(APP_LOGGER)
+    private readonly logger: AppLogger,
   ) {}
 
   async listUserRoles(
@@ -27,6 +33,7 @@ export class UserRoleService {
     userId: string,
     query: ListUserRolesQueryDto,
   ): Promise<UserRole[]> {
+    this.logger.log('listUserRoles started', this.context, domainId);
     const user = await this.userRepository.findOne({
       where: { id: userId, domain_id: domainId },
       relations: ['roles', 'roles.role'],
@@ -48,6 +55,7 @@ export class UserRoleService {
           )
         : user.roles ?? [];
 
+    this.logger.log('listUserRoles completed', this.context, domainId);
     return filteredRoles.slice(startIndex, endIndex);
   }
 
@@ -56,6 +64,7 @@ export class UserRoleService {
     userId: string,
     assignUserRoleDto: AssignUserRoleDto,
   ): Promise<UserRole> {
+    this.logger.log('assignRoleToUser started', this.context, domainId);
     const user = await this.userRepository.findOne({
       where: { id: userId, domain_id: domainId },
     });
@@ -90,7 +99,9 @@ export class UserRoleService {
       role_id: assignUserRoleDto.domainRoleId,
     });
 
-    return this.userRoleRepository.save(userRole);
+    const saved = await this.userRoleRepository.save(userRole);
+    this.logger.log('assignRoleToUser completed', this.context, domainId);
+    return saved;
   }
 
   async removeRoleFromUser(
@@ -98,6 +109,7 @@ export class UserRoleService {
     userId: string,
     roleId: string,
   ): Promise<void> {
+    this.logger.log('removeRoleFromUser started', this.context, domainId);
     const user = await this.userRepository.findOne({
       where: { id: userId, domain_id: domainId },
     });
@@ -120,8 +132,10 @@ export class UserRoleService {
     });
 
     if (result.affected === 0) {
+      this.logger.warn('removeRoleFromUser: association not found', this.context, domainId);
       throw new NotFoundException('User role association not found');
     }
+    this.logger.log('removeRoleFromUser completed', this.context, domainId);
   }
 }
 
